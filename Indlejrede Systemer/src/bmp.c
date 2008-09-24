@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "filtering.h"
 #include "bmp.h"
 
 int bmp_ctgc(char *File, char *File2){
@@ -25,6 +25,11 @@ int bmp_ctgc(char *File, char *File2){
 		}
 		bmp_palette_creator(pal);
 		bmp_colour_to_grayscale(bmfh, bmih, pixold, pixnew);
+
+		char * pixfilter = 0;
+
+		filter_image(pixnew, pixfilter, 0, 1, 480, 480);
+
 		bmp_save(File2, bmfh, bmih, pixnew, pal);
 	}
 	free(bmfh);
