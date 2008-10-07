@@ -6,5 +6,7 @@ int main (int argc, char *argv[]) {
 	char File2[]="./result.bmp";
 	bmp_ctgc(File,File2);
 
+	printf("I survived...");
+
     return 0;
 }

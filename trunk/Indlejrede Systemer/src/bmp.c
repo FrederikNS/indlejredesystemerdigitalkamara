@@ -28,9 +28,9 @@ int bmp_ctgc(char *File, char *File2){
 
 		char * pixfilter = 0;
 
-		filter_image(pixnew, pixfilter, 0, 1, 480, 480);
+		filter_image(pixnew, &pixfilter, 5, 1, 512, 512);
 
-		bmp_save(File2, bmfh, bmih, pixnew, pal);
+		bmp_save(File2, bmfh, bmih, pixfilter, pal);
 	}
 	free(bmfh);
 	free(bmih);
