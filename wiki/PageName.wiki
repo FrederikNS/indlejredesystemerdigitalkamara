@@ -1,0 +1,24 @@
+#summary One-sentence summary of this page.
+
+= Introduction =
+
+Definition of filter
+
+
+= Details =
+
+3 filters, each with a good boundary/bad boundary solution:
+
+Mean x*x filter filled with 1's.
+
+Laplacian 3*3 filter, -1*4 + 4 version.
+
+Prewitt vector length 3*3 filter, horizontal and vertical combined.
+
+Good boundary solution:
+
+Each boundary "pixel" is defined as equal to the closest image pixel.
+
+Bad boundary solution:
+
+"What boundary?"...
