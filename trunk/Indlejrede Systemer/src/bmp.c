@@ -6,6 +6,50 @@
 #include "compression_test.h"
 #include "bmp.h"
 
+//This method tests filtering and compression.
+//When compiling for release, comment this method out and
+//comment out the header files with "test" in their names,
+//thereby easily excluding unnecessary source code.
+int bmp_test(char *File) {
+	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
+	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
+	BYTE *pixold = 0;
+	BYTE *pixnew = 0;
+	BYTE *pal = 0;
+	if(bmfh && bmih){
+		bmp_info_reader(File, bmfh, bmih);
+		pixold = (BYTE *) malloc(sizeof(BYTE)*bmih->BiSizeImage);
+		pixnew = (BYTE *) malloc(sizeof(BYTE)*(bmih->BiSizeImage/3));
+		if(!pixold||!pixnew){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_image_reader(File, bmfh, bmih, pixold);
+		pal = (BYTE *) malloc(sizeof(BYTE)*1024);
+		if(!pal){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_palette_creator(pal);
+		bmp_colour_to_grayscale(bmfh, bmih, pixold, pixnew);
+
+
+		int image_width = 512, image_height = 512;
+
+		//Test filtering.
+		test_filtering(pixnew, image_width, image_height);
+
+		//Test compression.
+		test_compression();
+	}
+	free(bmfh);
+	free(bmih);
+	free(pixold);
+	free(pixnew);
+	free(pal);
+	return 0;
+}
+
 int bmp_ctgc(char *File, char *File2){
 	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
 	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
@@ -35,30 +79,15 @@ int bmp_ctgc(char *File, char *File2){
 		unsigned char *pixfilter = 0;
 		filter_image(pixnew, &pixfilter, 1, 3, image_width, image_height);
 
-		//Test compression.
-		if (test_compress()) {
-			//Fail.
-			printf("Testing of compression failed.\n");
-			return 1;
-		}
-		if (test_decompress()) {
-			//Fail.
-			printf("Testing of decompression failed.\n");
-			return 1;
-		}
-
 		/*int i;
 		for (i = 0; i < 100; i++) {
 			filter_image(pixnew, &pixfilter, , 3, image_width, image_height);
 			free(pixfilter);
 		}*/
 
-		//Test filtering.
-		//test_filtering(pixnew, image_width, image_height);
-
 		bmp_save(File2, bmfh, bmih, pixfilter, pal);
 
-		//free(pixfilter);
+		free(pixfilter);
 	}
 	free(bmfh);
 	free(bmih);
