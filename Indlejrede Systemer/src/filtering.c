@@ -3,383 +3,72 @@
 #include <stdlib.h>
 #include <math.h>
 
-int filter_image(unsigned char * image, unsigned char ** image2, char filter_type, char boundary_setting, int image_width, int image_height) {
+#define STEEPNESS_MAX_VALUE 2550//=(3²*255² + 1²*255²)/255
+#define DEBUG
 
-    //TODO : Need to find a proper way to get info about image width and height.
+int fold_mean_small(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
+int fold_mean_width(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
+int fold_mean_height(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
+int fold_mean_large(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
 
-    char * filter = 0;
-    int filter_width = 0;
+int filter_image(unsigned char * image, unsigned char ** image2, char folding_type, int filter_size, int image_width, int image_height) {
 
-    if (filter_get(filter_type, &filter, &filter_width) != 0) {
-        #ifdef DEBUG
-        printf("ERROR: Setting up filter failed.\n");
-        #endif
+    //Allocate memory.
+	unsigned char* new_image = (unsigned char*) malloc(sizeof(char)*image_width*image_height);
+	if (!new_image) {
+		#ifdef DEBUG
+		printf("ERROR: Failed to allocate memory to filtered image.\n");
+		#endif
+		return 1;
+	}
+	*image2 = &new_image[0];
 
-        return 1;
-    }
+	//Fold.
 
-    #ifdef DEBUG
-    printf("Filter-type chosen successfully.\n");
-    #endif
+	int success = 0;
 
-    //Calculate filter sum.
-    //TODO: Discuss how filter sum should be calculated.
-
-    int ite;
-    double sum = 0;
-    double sum_pos = 0, sum_neg = 0;
-    for (ite = 0; ite < filter_width*filter_width; ite++) {
-        if (filter[ite] > 0) {
-        	sum_pos += filter[ite];
-        }
-        else if (filter[ite] < 0) {
-        	sum_neg += filter[ite];
-        }
-    	sum = sum+abs(filter[ite]);
-    }
-
-    //Calculate filter half_length:
-    int filter_half_length = (filter_width-1)/2;
-
-
-    /*Select boundary and perform filtering*/
-
-
-    if (boundary_setting == 0) {//If boundary is set to valid:
-
-        //Check for filter dimension vs. image dimension.
-        //If image in any dimension is smaller than the filter,
-        //the filter cannot be applid.
-        if (filter_width > image_width || filter_width > image_height) {
-            #ifdef DEBUG
-            printf("ERROR: Selected filters dimension doesn't fit with the images dimension using the \"valid\" boundary setting.\n");
-            #endif
-            return 1;
-        }
-
-        //Filter the image
-		int i, a, e, o; //i column/x in image, a row/y in image, e column/x in filter, o row/y in filter.
-		unsigned char* new_image = (unsigned char*) malloc(sizeof(char)*image_width*image_height);
-		if (!new_image) {
+	switch (folding_type) {
+		case 0: {
+			//A laplacian fold. Detects the change in steepness around each pixel.
+			success = fold_laplacian(image, *image2, image_width, image_height);
+			break;
+		}
+		case 1: {
+			/*
+			A combined horizontal and vertical prewitt filter.
+			The value from the horizontal and vertical prewitt filter result in
+			an "elevation" vector. By taking the size of that vector, an indication
+			of the elevation of the area of the pixel is found.
+			In this implementation, the algoritm doesn't compute the length,
+			but the length squared. This results in the higher values taking up
+			much more of the grayscale than the low values, making them clearer.
+			*/
+			success = fold_steepness(image, *image2, image_width, image_height);
+			break;
+		}
+		case 2: {
+			//A simple mean fold,
+			success = fold_mean(image, *image2, filter_size, image_width, image_height);
+			break;
+		}
+		default: {
 			#ifdef DEBUG
-			printf("ERROR: Failed to allocate memory to filtered image.\n");
+			printf("ERROR: Selected filter option [%d] does not exist.\n", folding_type);
 			#endif
+			free(new_image);
 			return 1;
 		}
-		*image2 = &new_image[0];
+	}
 
-        int temp_sum = 0;//The temporary sum of the filter times image for a pixel.
-        double temp_sum2 = 0.0;//The final value for the pixel in the new image, calculated from temp_sum
-                                //and sum, the value of the filter.
-        //Loop through each item in the new image and find the new pixel value.
-        for (i = 0+filter_half_length; i < image_width-filter_half_length; i++) {
-            for (a = 0+filter_half_length; a < image_height-filter_half_length; a++) {
-                //Loop through each pixel in the neighbourhood of the current pixel in the new image,
-                //multiply it with the corresponding value in the filter,
-                //and add it to the temporary sum which is used to determine the current pixels value.
-                temp_sum = 0;
-                for (e = -filter_half_length; e < filter_half_length+1; e++) {
-                    for (o = -filter_half_length; o < filter_half_length+1; o++) {
-                        temp_sum += image[i+e + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                }
-                //printf("\n%d", temp_sum);
-                temp_sum2 = ((double)temp_sum)/sum;//Take the filters sum, and divide it by the calculated sum.
-                (*image2)[i-filter_half_length+((a)-filter_half_length)*(image_width-filter_half_length*2)] = temp_sum2;
-            }
-            //printf("i: %d\n", i);
-        }
-    }
+	if (success) {
+		#ifdef DEBUG
+		printf("ERROR: Failed to fold image.\n");
+		#endif
+		free(new_image);
+		return 1;
+	}
 
-    else if (boundary_setting == 1) {//If boundary is set to fixed with constant value 0.
-
-
-        //Filter the image
-		int i, a, e, o; //i column/x in image, a row/y in image, e column/x in filter, o row/y in filter.
-		unsigned char* new_image = (unsigned char*) malloc(sizeof(char)*image_width*image_height);
-		if (!new_image) {
-			#ifdef DEBUG
-			printf("ERROR: Failed to allocate memory to filtered image.\n");
-			#endif
-			return 1;
-		}
-		*image2 = &new_image[0];
-
-        int temp_sum = 0;//The temporary sum of the filter times image for a pixel.
-        double temp_sum2 = 0.0;//The final value for the pixel in the new image, calculated from temp_sum
-                                //and sum, the value of the filter.
-
-        /*   This boundary handling was developed from boundary setting 2,
-             the difference is that a lot of unnecessary loops have been removed.   */
-
-        for (i = 0; i < image_width; i++) {
-            for (a = 0; a < image_height; a++) {
-                //Loop through each pixel in the neighbourhood of the current pixel in the new image,
-                //multiply it with the corresponding value in the filter,
-                //and add it to the temporary sum which is used to determine the current pixels value.
-
-                temp_sum = 0;
-
-                //Loop for the horizontal part of the pixel-filter area which are inside the image.
-                for (e = max(-i, -filter_half_length); e < min(image_width-i, filter_half_length+1); e++) {
-                    for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                        temp_sum += image[i+e + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                }
-
-                //Method to scale from filter-made interval to the 0-255 interval
-                //temp_sum2 = ((double)temp_sum)/sum;//Take the filters sum, and divide it by the calculated sum.
-                //(*image2)[i+a*image_width] = (temp_sum-sum_neg*255)*255/(sum_pos*255-sum_neg*255);
-
-                //Method to make the negative laplacian filter clearer.
-                temp_sum2 = ((double)temp_sum)/sum;//Take the filters sum, and divide it by the calculated sum.
-				double temp_sum3 = (temp_sum-sum_neg*255)*255/(sum_pos*255-sum_neg*255);
-				double temp_sum4 = (temp_sum3-128)*10 + 128;
-
-				if (temp_sum4 < 0) {
-					temp_sum4 = 0;
-				}
-				else if (temp_sum4 > 255) {
-					temp_sum4 = 255;
-				}
-
-				(*image2)[i+a*image_width] = temp_sum4;
-
-
-            }
-        }
-    }
-
-    else if (boundary_setting == 2) {//If boundary is set to fixed with constant value 50.
-
-        int boundary_value = 50;
-
-        //Filter the image
-        int i, a, e, o; //i column/x in image, a row/y in image, e column/x in filter, o row/y in filter.
-        unsigned char* new_image = (unsigned char*) malloc(sizeof(char)*image_width*image_height);
-        if (!new_image) {
-            #ifdef DEBUG
-            printf("ERROR: Failed to allocate memory to filtered image.\n");
-            #endif
-            return 1;
-        }
-        *image2 = &new_image[0];
-
-        int temp_sum = 0;//The temporary sum of the filter times image for a pixel.
-        double temp_sum2 = 0.0;//The final value for the pixel in the new image, calculated from temp_sum
-                                //and sum, the value of the filter.
-
-        for (i = 0; i < image_width; i++) {
-            for (a = 0; a < image_height; a++) {
-                //Loop through each pixel in the neighbourhood of the current pixel in the new image,
-                //multiply it with the corresponding value in the filter,
-                //and add it to the temporary sum which is used to determine the current pixels value.
-
-                temp_sum = 0;
-
-                //Loop for the horizontal part of the pixel-filter area which are outside and on the left of the image.
-                for (e = -filter_half_length; e < -i; e++) {
-                    for (o = -filter_half_length; o < -a; o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = image_height-a; o < filter_half_length+1; o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                }
-
-                //Loop for the horizontal part of the pixel-filter area which are inside the image.
-                for (e = max(-i, -filter_half_length); e < min(image_width-i, filter_half_length+1); e++) {
-                    for (o = -filter_half_length; o < -a; o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                    for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                        temp_sum += image[i+e + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                        if (a == 8 && i < 2) {
-                            printf("Sum is: %d, o is: %d \n", temp_sum, o);
-                        }
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                    for (o = image_height-a; o < filter_half_length+1; o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                }
-
-                //Loop for the horizontal part of the pixel-filter area which are outside and on the right of the image.
-                for (e = image_width-i; e < filter_half_length+1; e++) {
-                    for (o = -filter_half_length; o < -a; o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = image_height-a; o < filter_half_length+1; o++) {
-                        temp_sum += boundary_value*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                }
-
-                //printf("\n%d", temp_sum);
-                temp_sum2 = ((double)temp_sum)/sum;//Take the filters sum, and divide it by the calculated sum.
-                (*image2)[i+a*image_width] = temp_sum2;
-            }
-            //printf("i: %d\n", i);
-        }
-
-    }
-
-    else if (boundary_setting == 3) {//If boundary is set to periodic.
-
-        //Filter the image
-        int i, a, e, o; //i column/x in image, a row/y in image, e column/x in filter, o row/y in filter.
-        unsigned char* new_image = (unsigned char*) malloc(sizeof(char)*image_width*image_height);
-        if (!new_image) {
-            #ifdef DEBUG
-            printf("ERROR: Failed to allocate memory to filtered image.\n");
-            #endif
-            return 1;
-        }
-        *image2 = &new_image[0];
-
-        int temp_sum = 0;//The temporary sum of the filter times image for a pixel.
-        double temp_sum2 = 0.0;//The final value for the pixel in the new image, calculated from temp_sum
-                                //and sum, the value of the filter.
-
-        for (i = 0; i < image_width; i++) {
-            for (a = 0; a < image_height; a++) {
-                //Loop through each pixel in the neighbourhood of the current pixel in the new image,
-                //multiply it with the corresponding value in the filter,
-                //and add it to the temporary sum which is used to determine the current pixels value.
-
-                temp_sum = 0;
-
-                //Loop for the horizontal part of the pixel-filter area which are outside and on the left of the image.
-                for (e = -filter_half_length; e < -i; e++) {
-                    for (o = -filter_half_length; o < -a; o++) {
-                        temp_sum += image[mod((i+e), image_width) + image_width*mod((a+o), (image_height))]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                        temp_sum += image[mod((i+e), image_width) + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = image_height-a; o < filter_half_length+1; o++) {
-                        temp_sum += image[mod((i+e), image_width) + image_width*((a+o)%image_height)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                }
-
-                //Loop for the horizontal part of the pixel-filter area which are inside the image.
-                for (e = max(-i, -filter_half_length); e < min(image_width-i, filter_half_length+1); e++) {
-                    for (o = -filter_half_length; o < -a; o++) {
-                        temp_sum += image[i+e + image_width*mod((a+o), (image_height))]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                    for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                        temp_sum += image[i+e + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                    for (o = image_height-a; o < filter_half_length+1; o++) {
-                        temp_sum += image[i+e + image_width*((a+o)%image_height)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                }
-
-                //Loop for the horizontal part of the pixel-filter area which are outside and on the right of the image.
-                for (e = image_width-i; e < filter_half_length+1; e++) {
-                    for (o = -filter_half_length; o < -a; o++) {
-                        temp_sum += image[((i+e) % image_width) + image_width*((a+o)%image_height)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                        temp_sum += image[((i+e) % image_width) + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    for (o = image_height-a; o < filter_half_length+1; o++) {
-                        temp_sum += image[((i+e) % image_width) + image_width*((a+o)%image_height)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                    }
-                    //printf("\nSum: %d", temp_sum);
-                }
-
-                //printf("\n%d", temp_sum);
-                temp_sum2 = ((double)temp_sum)/sum;//Take the filters sum, and divide it by the calculated sum.
-                (*image2)[i+a*image_width] = temp_sum2;
-            }
-            //printf("i: %d\n", i);
-        }
-    }
-
-
-    //Experimental boundary/filter.
-    else if (boundary_setting == 4) {//If boundary is set to fixed with constant value 0.
-
-
-            //Filter the image
-    		int i, a, e, o; //i column/x in image, a row/y in image, e column/x in filter, o row/y in filter.
-    		unsigned char* new_image = (unsigned char*) malloc(sizeof(char)*image_width*image_height);
-    		if (!new_image) {
-    			#ifdef DEBUG
-    			printf("ERROR: Failed to allocate memory to filtered image.\n");
-    			#endif
-    			return 1;
-    		}
-    		*image2 = &new_image[0];
-
-            int temp_sum = 0, temp_sum_ = 0;//The temporary sum of the filter times image for a pixel.
-            double temp_sum2 = 0.0;//The final value for the pixel in the new image, calculated from temp_sum
-                                    //and sum, the value of the filter.
-
-            /*   This boundary handling was developed from boundary setting 2,
-                 the difference is that a lot of unnecessary loops have been removed.   */
-
-            for (i = 0; i < image_width; i++) {
-                for (a = 0; a < image_height; a++) {
-                    //Loop through each pixel in the neighbourhood of the current pixel in the new image,
-                    //multiply it with the corresponding value in the filter,
-                    //and add it to the temporary sum which is used to determine the current pixels value.
-
-                    temp_sum = 0;
-
-                    filter_get(3, &filter, &filter_width);
-
-                    //Loop for the horizontal part of the pixel-filter area which are inside the image.
-                    for (e = max(-i, -filter_half_length); e < min(image_width-i, filter_half_length+1); e++) {
-                        for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-                            temp_sum += image[i+e + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-                        }
-                    }
-
-                    temp_sum_ = 0;
-
-					filter_get(4, &filter, &filter_width);
-
-					//Loop for the horizontal part of the pixel-filter area which are inside the image.
-					for (e = max(-i, -filter_half_length); e < min(image_width-i, filter_half_length+1); e++) {
-						for (o = max(-a, -filter_half_length); o < min(image_height-a, filter_half_length+1); o++) {
-							temp_sum_ += image[i+e + image_width*(a+o)]*(filter[(e+filter_half_length)+filter_width*(o+filter_half_length)]);
-						}
-					}
-
-					double stuff = ((temp_sum*temp_sum) + (temp_sum_*temp_sum_));
-					temp_sum2 = sqrt(stuff);
-					double temp_sum3 = (temp_sum2/sqrt(18.0*255.0*255.0))/255.0;
-					double k = 0.002;
-                    (*image2)[i+a*image_width] = 255.0*temp_sum3/((1-k)*temp_sum3 + k);//Scale it up.
-
-                    if (i == 50 && a == 50) {
-                    	printf("temp_sum: %d   temp_sum_: %d   temp_sum2: %f   sqrt(18*255*255): %f",
-                    			temp_sum, temp_sum_, temp_sum2, sqrt(18.0*255.0*255.0));
-                    }
-                }
-            }
-        }
-
-    free(filter);
-
-    return 0;
-
+	return 0;
 }
 
 int min(int x, int y) {
@@ -396,86 +85,484 @@ int max(int x, int y) {
     return y;
 }
 
-//Must have positive y.
-int mod(int x, int y) {
-    while (x < 0) {
-        x += y;
-    }
-    return (x % y);
+int fold_mean(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height) {
+
+	/*
+	The algorithm works by taking each pixel,
+	looking at the area the mean filter operates on,
+	and splits the area into 9 types;
+	1 inner type, which consists of the actual pixels of the mean filter area,
+	4 side types, which consists of the boundary pixels below, above, right or left
+	to the image,
+	4 corner types, which consists of the remainder of the boundary pixels
+	in the mean filter area.
+	*/
+
+	if (filter_size < 1 || filter_size % 2 == 0) {
+		#ifdef DEBUG
+		printf("ERROR: Selected filter size [%d] for mean filter is not valid.\n",
+				filter_size);
+		#endif
+		return 1;
+	}
+
+	int filter_area = filter_size*filter_size;
+	int i, a, e, o; //i column/x in image, a row/y in image, e column/x in filter,
+		//o row/y in filter.
+
+	int sum = 0;//The temporary sum for a pixel.
+
+	int filter_half = (filter_size-1)/2;
+
+	for (i = 0; i < image_width; i++) {
+		for (a = 0; a < image_height; a++) {
+			//Loop through each pixel in the neighbourhood of the current pixel in the new image,
+			//and add it to the temporary sum which is used to determine the current pixels value.
+
+			sum = 0;
+
+			//Loop for the horizontal part of the pixel-filter area which are outside and on the left of the image.
+			for (e = -filter_half; e < -i; e++) {
+				for (o = -filter_half; o < -a; o++) {//
+					sum += image[0];
+				}
+				for (o = max(-a, -filter_half); o < min(image_height-a, filter_half+1); o++) {
+					sum += image[(a+o)*image_width];
+				}
+				for (o = image_height-a; o < filter_half+1; o++) {
+					sum += image[image_width*(image_height-1)];
+				}
+			}
+
+			//Loop for the horizontal part of the pixel-filter area which are inside the image.
+			for (e = max(-i, -filter_half); e < min(image_width-i, filter_half+1); e++) {
+				for (o = -filter_half; o < -a; o++) {
+					sum += image[i+e];
+				}
+				for (o = max(-a, -filter_half); o < min(image_height-a, filter_half+1); o++) {
+					sum += image[i+e+(a+o)*image_width];
+				}
+				for (o = image_height-a; o < filter_half+1; o++) {
+					sum += image[image_width*(image_height-1)+i+e];
+				}
+			}
+
+			//Loop for the horizontal part of the pixel-filter area which are outside and on the right of the image.
+			for (e = image_width-i; e < filter_half+1; e++) {
+				for (o = -filter_half; o < -a; o++) {
+					sum += image[image_width-1];
+				}
+				for (o = max(-a, -filter_half); o < min(image_height-a, filter_half+1); o++) {
+					sum += image[image_width-1+(a+o)*image_width];
+				}
+				for (o = image_height-a; o < filter_half+1; o++) {
+					sum += image[image_width*image_height-1];
+				}
+			}
+
+			image2[i+a*image_width] = sum/filter_area;
+		}
+	}
+
+	return 0;
 }
 
-int filter_get(char filter_type, char ** filter, int * filter_width) {
+int fold_laplacian(unsigned char * image, unsigned char * image2, int image_width, int image_height) {
 
-	char* f;//Filter mask.
-	if (filter_type < 6) {
-		f = (char *) malloc(sizeof(char)*9);
-	}
-	else {
-		f = (char *) malloc(sizeof(char)*25);
-	}
+    /*Specialized, optimized laplacian.
+	in order to
+    Filter is:
+    0   -1   0
+    -1   4  -1
+    0   -1   0
 
-    if (!f) {
-        #ifdef DEBUG
-        printf("ERROR: Allocating memory to filter failed.\n");
-        #endif
-        return 1;
-    }
+    Boundary is: even reflection.
 
-    switch (filter_type) {
-		case 0:   {//9-element low-pass mean 3X3 filter.
-			int i;
-			for (i = 0; i < 9; i++) {
-				f[i] = 1;
-			}
-	        break;
+    Method used:
+    Get the filter values, convert to the interval 0-255, stretch the distribution,
+    get valid pixels value (< 0 to 0, >255 to 255).
+
+    Steps:
+    Add 4 multiplied with relative pixel (0,0),
+    subtract relative pixel (-1, 0), (0, -1), (1, 0), (0, 1),
+    linear shift from -4*255_4*255 to 0_255 interval,
+    subtract general mean (128),
+    stretch distribution (multiply by 10),
+    add general mean,
+    negative to zero and >255 to 255,
+    done.
+    The used stretching works, since the vast majority of values on
+    regular images are very close to 128.
+
+
+
+    The steps is modified for the 8 outer regions of the image;
+    the sides and the corners.*/
+
+	int new_value = 0; //The value after stretching,
+					   //but possibly with values outside 0-255.
+	int i, a; //i is column number (from bottom to top), a is row number.
+
+	int image_width_less = image_width-1;
+	int image_height_less = image_height-1;
+
+	//Taking care of the special case in which the image is 1 pixel high.
+	if (image_height == 1) {
+
+		//First pixel
+		new_value = (image[0] - image[1])*5/4 + 123;
+		if (new_value < 0) {(image2)[0] = 0;}
+		else if (new_value > 255) {(image2)[0] = 255;}
+		else {(image2)[0] = new_value;}
+
+		//Middle pixels.
+		for (i = 1; i < image_width_less; i++) {
+			new_value = (3*image[i]-//"3*" due to reflection.
+				(image[i-1]
+				+image[i + image_width]
+				+image[i+1]))
+				*5/4 + 123;
+
+			if (new_value < 0) {(image2)[i] = 0;}
+			else if (new_value > 255) {(image2)[i] = 255;}
+			else {(image2)[i] = new_value;}
 		}
-		case 1: {//9-element low-pass weighted mean 3X3 filter.
-	        f[0] = 1; f[1] = 2; f[2] = 1;
-	        f[3] = 2; f[4] = 3; f[5] = 2;
-	        f[6] = 1; f[7] = 2; f[8] = 1;
-	        break;
-	    }
-		case 2: {//Prewitt high-pass horizontal edge detection 3X3 filter.
-	        f[0] = f[3] = f[6] = -1;
-	        f[1] = f[4] = f[7] = 0;
-	        f[2] = f[5] = f[8] = 1;
-	        break;
-	    }
-		case 3: {//Prewitt high-pass vertical edge detection 3X3 filter.
-	        f[0] = f[1] = f[2] = -1;
-	        f[3] = f[4] = f[5] = 0;
-	        f[6] = f[7] = f[8] = 1;
-	        break;
-	    }
-		case 4: {//Prewitt high-pass vertical edge detection 3X3 filter.
-	        f[0] = f[1] = f[2] = -1;
-	        f[3] = f[4] = f[5] = 0;
-	        f[6] = f[7] = f[8] = 1;
-	        break;
-	    }
-		case 5: {//Negative Laplacian high-pass edge and line detection 3X3 filter.
-	        f[0] = 0; f[1] = -1; f[2] = 0;
-	        f[3] = -1; f[4] = 4; f[5] = -1;
-	        f[6] = 0; f[7] = -1; f[8] = 0;
-	        break;
-	    }
-		case 6: {//25-element low-pass mean 5X5 filter.
-	        int i;
-	        for (i = 0; i < 25; i++) {
-	            f[i] = 1;
-	        }
-	        break;
-	    }
-		default: free(f); return 1;
-    }
 
-    *filter = f;
-    if (filter_type < 6) {
-        *filter_width = 3;
-    }
-    else {
-    	*filter_width = 5;
-    }
+		//Last pixel.
+		new_value = (image[image_width-1] - image[image_width-2])*5/4 + 123;
+		if (new_value < 0) {(image2)[image_width-1] = 0;}
+		else if (new_value > 255) {(image2)[image_width-1] = 255;}
+		else {(image2)[image_width-1] = new_value;}
+	}
+	if ((image_width == 1 && image_height == 2) || (image_width == 2 && image_height == 1)) {
+		new_value = (image[0] - image[1])*5/4 + 123;
 
-    return 0;
+		if (new_value < 0) {(image2)[0] = 0;}
+		else if (new_value > 255) {(image2)[0] = 255;}
+		else {(image2)[0] = new_value;}
+
+		new_value = (image[1] - image[0])*5/4 + 123;
+
+		if (new_value < 0) {(image2)[1] = 0;}
+		else if (new_value > 255) {(image2)[1] = 255;}
+		else {(image2)[1] = new_value;}
+
+		return 0;
+	}
+	else if (image_width == 1 && image_height == 1) {
+		image2[0] = 0;
+		return 0;
+	}
+
+	//General case (image size min. 2X2).
+
+	//Middle.
+	for (i = 1; i < image_width_less; i++) {
+		for (a = 1; a < image_height_less; a++) {
+			new_value = (4*image[i + image_width*a]-
+				(image[i + image_width*(a-1)]
+				+image[i-1 + image_width*a]
+				+image[i + image_width*(a+1)]
+				+image[i+1 + image_width*a]))
+				*5/4 + 123;
+
+			if (new_value < 0) {(image2)[i+a*image_width] = 0;}
+			else if (new_value > 255) {(image2)[i+a*image_width] = 255;}
+			else {(image2)[i+a*image_width] = new_value;}
+		}
+	}
+
+	//Bottom side.
+	for (i = 1; i < image_width_less; i++) {
+		new_value = (3*image[i]-//"3*" due to reflection.
+			(image[i-1]
+			+image[i + image_width]
+			+image[i+1]))
+			*5/4 + 123;
+
+		if (new_value < 0) {(image2)[i] = 0;}
+		else if (new_value > 255) {(image2)[i] = 255;}
+		else {(image2)[i] = new_value;}
+	}
+
+	//Top side.
+	for (i = 1; i < image_width_less; i++) {
+		new_value = (3*image[i+image_width*image_height_less]-//"3*" due to reflection.
+			(image[i+image_width*image_height_less-1]
+			+image[i+image_width*image_height_less+1]
+			+image[i+image_width*(image_height_less-1)]))
+			*5/4 + 123;
+
+		if (new_value < 0) {(image2)[i+image_width*image_height_less] = 0;}
+		else if (new_value > 255) {(image2)[i+image_width*image_height_less] = 255;}
+		else {(image2)[i+image_width*image_height_less] = new_value;}
+	}
+
+	//Left side.
+	for (a = 1; a < image_height_less; a++) {
+		new_value = (3*image[image_width*a]-//"3*" due to reflection.
+			(image[image_width*(a-1)]
+			+image[image_width*(a+1)]
+			+image[1 + image_width*a]))
+			*5/4 + 123;
+
+		if (new_value < 0) {(image2)[image_width*a] = 0;}
+		else if (new_value > 255) {(image2)[image_width*a] = 255;}
+		else {(image2)[image_width*a] = new_value;}
+	}
+
+	//Right side.
+	for (a = 1; a < image_height_less; a++) {
+		new_value = (3*image[image_width_less+image_width*a]-//"3*" due to reflection.
+			(image[image_width_less+image_width*(a-1)]
+			+image[image_width_less+image_width*(a+1)]
+			+image[image_width_less+image_width*a-1]))
+			*5/4 + 123;
+
+		if (new_value < 0) {(image2)[image_width_less+image_width*a] = 0;}
+		else if (new_value > 255) {(image2)[image_width_less+image_width*a] = 255;}
+		else {(image2)[image_width_less+image_width*a] = new_value;}
+	}
+
+	//Bottom-left corner.
+	new_value = (2*image[0]-//"2*" due to reflection.
+		(image[1]
+		+image[image_width]))
+		*5/4 + 123;
+
+	if (new_value < 0) {(image2)[0] = 0;}
+	else if (new_value > 255) {(image2)[0] = 255;}
+	else {(image2)[0] = new_value;}
+
+	//Bottom-right corner.
+	new_value = (2*image[image_width-1]-//"2*" due to reflection.
+		(image[2*image_width-1]
+		+image[image_width-2]))
+		*5/4 + 123;
+
+	if (new_value < 0) {(image2)[image_width-1] = 0;}
+	else if (new_value > 255) {(image2)[image_width-1] = 255;}
+	else {(image2)[image_width-1] = new_value;}
+
+	//Top-left corner.
+	new_value = (2*image[image_width*(image_height-1)]-//"2*" due to reflection.
+		(image[image_width*(image_height-1)+1]
+		+image[image_width*(image_height-2)]))
+		*5/4 + 123;
+
+	if (new_value < 0) {(image2)[image_width*(image_height-1)] = 0;}
+	else if (new_value > 255) {(image2)[image_width*(image_height-1)] = 255;}
+	else {(image2)[image_width*(image_height-1)] = new_value;}
+
+	//Top-right corner.
+	new_value = (2*image[image_width*image_height-1]-//"2*" due to reflection.
+		(image[image_width*image_height-2]
+		+image[image_width*(image_height-1)-1]))
+		*5/4 + 123;
+
+	if (new_value < 0) {(image2)[image_width*image_height-1] = 0;}
+	else if (new_value > 255) {(image2)[image_width*image_height-1] = 255;}
+	else {(image2)[image_width*image_height-1] = new_value;}
+
+	return 0;
+
+}
+
+int fold_steepness(unsigned char * image, unsigned char * image2, int image_width, int image_height) {
+
+	int sum_horizontal = 0; //Horizontal sum of filter.
+	int sum_vertical = 0; //Vertical sum of filter.
+	int i, a; //i is column number (from bottom to top), a is row number.
+
+	int image_width_less = image_width-1;
+	int image_height_less = image_height-1;
+
+	/*
+	Horizontal filter:
+
+	1  0 -1
+	1  0 -1
+	1  0 -1
+
+	Vertical filter:
+
+	 1  1  1
+	 0  0  0
+	-1 -1 -1
+	*/
+
+	if (image_width == 2 && image_height == 1) {
+		image[0] = (3*image[0]-3*image[1])*(3*image[0]-3*image[1])/STEEPNESS_MAX_VALUE;
+		image[1] = (3*image[0]-3*image[1])*(3*image[0]-3*image[1])/STEEPNESS_MAX_VALUE;
+	}
+	else if (image_width == 1 && image_height == 1) {
+		image[0] = (3*image[1]-3*image[0])*(3*image[1]-3*image[0])/STEEPNESS_MAX_VALUE;
+		image[1] = (3*image[1]-3*image[0])*(3*image[1]-3*image[0])/STEEPNESS_MAX_VALUE;
+	}
+	else if (image_width == 1 && image_height == 1) {
+		image[0] = 0;
+	}
+
+	//Middle.
+	for (i = 1; i < image_width_less; i++) {
+		for (a = 1; a < image_height_less; a++) {
+			sum_horizontal = (
+				image[i + image_width*(a-1)-1]
+				+image[i + image_width*a-1]
+				+image[i + image_width*(a+1)-1]
+			    -(image[i + image_width*(a-1)+1]
+				+image[i + image_width*a+1]
+				+image[i + image_width*(a+1)+1]));
+			sum_vertical = (
+				image[i + image_width*(a+1)-1]
+				+image[i + image_width*(a+1)]
+				+image[i + image_width*(a+1)+1]
+				-(image[i + image_width*(a-1)-1]
+				+image[i + image_width*(a-1)]
+				+image[i + image_width*(a-1)+1]));
+			image2[i + image_width*a] = (
+					(sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+					/STEEPNESS_MAX_VALUE);
+		}
+	}
+
+	//Bottom side.
+	for (i = 1; i < image_width_less; i++) {
+		sum_horizontal = (
+			2*image[i -1]//"2*" due to reflection.
+			+image[i + image_width-1]
+			-(2*image[i + 1]//"2*" due to reflection.
+			+image[i + image_width+1]));
+		sum_vertical = (
+			image[i + image_width-1]
+			+image[i + image_width]
+			+image[i + image_width+1]
+			-(image[i -1]
+			+image[i]
+			+image[i+1]));
+
+		image2[i] = (
+				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+				/STEEPNESS_MAX_VALUE;
+	}
+
+	//Top side.
+	for (i = 1; i < image_width_less; i++) {
+		sum_horizontal = (
+			image[i -1 + image_width*(image_height_less-1)]
+			+2*image[i -1 + image_width*image_height_less]//"2*" due to reflection.
+			-(image[i +1 + image_width*(image_height_less-1)]
+			+2*image[i +1 + image_width*image_height_less]));//"2*" due to reflection.
+		sum_vertical = (
+			image[i + image_width*image_height_less-1]
+			+image[i + image_width*image_height_less]
+			+image[i + image_width*image_height_less+1]
+			-(image[i+ image_width*(image_height_less-1)-1]
+			+image[i+image_width*(image_height_less-1)]
+			+image[i+image_width*(image_height_less-1)+1]));
+
+		image2[i+image_width*image_height_less] = (
+				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+				/STEEPNESS_MAX_VALUE;
+	}
+
+	//Left side.
+	for (a = 1; a < image_height_less; a++) {
+		sum_horizontal = (
+			image[image_width*(a-1)]
+			+image[image_width*a]
+			+image[image_width*(a+1)]
+			-(image[image_width*(a-1)+1]
+			+image[image_width*a+1]
+			+image[image_width*(a+1)+1]));
+		sum_vertical = (
+			2*image[image_width*(a+1)]//"2*" due to reflection.
+			+image[image_width*(a+1)+1]
+			-(2*image[image_width*(a-1)]//"2*" due to reflection.
+			+image[image_width*(a-1)+1]));
+		image2[image_width*a] = (
+				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+				/STEEPNESS_MAX_VALUE;
+	}
+
+	//Right side.
+	for (a = 1; a < image_height_less; a++) {
+		sum_horizontal = (
+			image[-2+image_width*a]
+			+image[-2+image_width*(a+1)]
+			+image[-2+image_width*(a+2)]
+			-(image[-1+image_width*a]
+			+image[-1+image_width*(a+1)]
+			+image[-1+image_width*(a+2)]));
+		sum_vertical = (
+			2*image[-1+image_width*(a+2)]//"2*" due to reflection.
+			+image[-2+image_width*(a+2)]
+			-(2*image[-1+image_width*a]//"2*" due to reflection.
+			+image[-2+image_width*a]));
+		image2[image_width*(a+1)-1] = (
+				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+				/STEEPNESS_MAX_VALUE;
+	}
+
+	//Bottom-left corner.
+	sum_horizontal = (
+		2*image[0]//"2*" due to reflection.
+		+image[image_width]
+		-(2*image[1]//"2*" due to reflection.
+		+image[image_width+1]));
+	sum_vertical = (
+		2*image[image_width]//"2*" due to reflection.
+		+image[image_width+1]
+		-(2*image[0]//"2*" due to reflection.
+		+image[1]));
+	image2[0] = (
+			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+			/STEEPNESS_MAX_VALUE;
+
+	//Bottom-right corner.
+	sum_horizontal = (
+		2*image[image_width-2]//"2*" due to reflection.
+		+image[image_width*2-2]
+		-(2*image[image_width-1]//"2*" due to reflection.
+		+image[image_width*2-1]));
+	sum_vertical = (
+		2*image[image_width*2-1]//"2*" due to reflection.
+		+image[image_width*2-2]
+		-(2*image[image_width-1]//"2*" due to reflection.
+		+image[image_width-2]));
+	image2[image_width-1] = (
+			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+			/STEEPNESS_MAX_VALUE;
+
+	//Top-left corner.
+	sum_horizontal = (
+		2*image[image_width*image_height_less]//"2*" due to reflection.
+		+image[image_width*(image_height_less-1)]
+		-(2*image[image_width*image_height_less+1]//"2*" due to reflection.
+		+image[image_width*(image_height_less-1)+1]));
+	sum_vertical = (
+		2*image[image_width*image_height_less]//"2*" due to reflection.
+		+image[image_width*image_height_less+1]
+		-(2*image[image_width*(image_height_less-1)]//"2*" due to reflection.
+		+image[image_width*(image_height_less-1)+1]));
+	image2[image_width*image_height_less] = (
+			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+			/STEEPNESS_MAX_VALUE;
+
+	//Top-right corner.
+	sum_horizontal = (
+		2*image[image_width*image_height-2]//"2*" due to reflection.
+		+image[image_width*image_height_less-2]
+		-(2*image[image_width*image_height-1]//"2*" due to reflection.
+		+image[image_width*image_height_less-1]));
+	sum_vertical = (
+		2*image[image_width*image_height-1]//"2*" due to reflection.
+		+image[image_width*image_height-2]
+		-(2*image[image_width*image_height_less-1]//"2*" due to reflection.
+		+image[image_width*image_height_less-2]));
+	image2[image_width*image_height-1] = (
+			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
+			/STEEPNESS_MAX_VALUE;
+
+	return 0;
 }
