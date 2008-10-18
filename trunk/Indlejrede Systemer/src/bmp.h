@@ -35,6 +35,8 @@ typedef struct {
 #pragma pack(pop)
 
 int bmp_ctgc(char *File, char *File2);
+int bmp_compress(char *File, char *File2);
+int bmp_decompress(char *File, char *File2);
 
 /* Open and read the Header of a BMP file */
 int bmp_info_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih);
@@ -50,5 +52,8 @@ int bmp_colour_to_grayscale(BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE
 
 /* Store image to BMP file */
 int bmp_save(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *pixnew, BYTE *pal);
+
+/* Decompress bmp image data */
+int decompress(BYTE * compressed_image, BYTE ** decompressed_image, int image_width, int image_height);
 
 #endif /* __BMP_H */
