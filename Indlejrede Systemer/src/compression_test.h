@@ -8,4 +8,6 @@ int test_compress();
 if the output is correct.*/
 int test_decompress();
 
+int test_compression();
+
 #endif /* COMPRESSION_TEST_H_ */

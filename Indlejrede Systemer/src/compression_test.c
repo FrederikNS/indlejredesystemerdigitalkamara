@@ -5,6 +5,15 @@
 #include <stdio.h>
 //#define DEBUG
 
+//Tests compression and decompression.
+int test_compression() {
+	printf("Testing compression system. 0 for successful testing, anything else failure.\n");
+	printf("Test compression: %d\n", test_compress());
+	printf("Test decompression: %d\n", test_decompress());
+	return 0;
+}
+
+//Tests compression.
 int test_compress() {
 
 	/*   Test 1: Handle 3*5 image with different values.   */
@@ -123,6 +132,7 @@ int test_compress() {
 	return 0;
 }
 
+//Tests decompression.
 int test_decompress() {
 
 	//Test 1: Handle simple line.
