@@ -23,7 +23,7 @@ static int lcd_pixel_pointer;
 
 void lcd_set_width(int width) {
 	/* set desired image width */
-	image_width = width;	
+	image_width = width;
 }
 
 void lcd_set_height(int height) {
@@ -32,9 +32,9 @@ void lcd_set_height(int height) {
 }
 
 void lcd_show_image() {
-	if(!bmp_save("output.bmp", &image)) {
+	/*if(!bmp_save("output.bmp", &image)) {
 		printf("lcd_show_image(): failed to save file\n");
-	}
+	}*/
 }
 
 void lcd_reset_pointer() {
