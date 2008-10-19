@@ -253,6 +253,7 @@ int bmp_info_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih) 
 
 int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, IMAGE *image_data) {
 	FILE* fp;
+	IMAGE *pic24bit;
 	
 	if((fp = fopen(File, "rb")) == NULL) {
 		perror("Could not open file");
@@ -260,7 +261,14 @@ int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih,
 	}
 	
 	fseek(fp, bmfh->BfOffBits, SEEK_SET);
-	fread(image_data->Pixels, sizeof(char), bmih->BiSizeImage, fp);
+	
+	if(bmih->BiBitCount == 24) {
+		pic24bit = (IMAGE *) malloc(sizeof(IMAGE));
+		fread(pic24bit->Pixels, sizeof(char), bmih->BiSizeImage, fp);
+		bmp_colour_to_grayscale(bmfh, bmih, pic24bit->Pixels, image_data->Pixels);
+	} else if (bmih->BiBitCount == 8) {
+		fread(image_data->Pixels, sizeof(char), bmih->BiSizeImage, fp);
+	}
 	fclose(fp);
 	
 	image_data->Width=bmih->BiWidth;
