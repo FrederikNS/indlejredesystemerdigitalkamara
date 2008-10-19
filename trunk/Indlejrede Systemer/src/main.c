@@ -44,12 +44,12 @@ int main (int argc, char *argv[]) {
 		curr_image->Width=ccd_get_width();
 
 		test_filtering(curr_image);
-		printf("\nDo you want to manipulate the picture? [yes/no]\n");
-		while(command != "yes" || command != "no"){
+		printf("\nDo you want to manipulate the picture? [y/n]\n");
+		while(command[0] != 'y' || command[0] != 'n'){
 			fgets(command, BUFFER_LENGTH, stdin);
-			sscanf(command, "%s", command);
+			sscanf(command, "%c", command);
 		}
-		if(command == "yes") {
+		if(command[0] == 'y') {
 			filter = 0;
 			printf("\nPlease choose a filter to apply: \n"
 				   "1. High-pass Line Detection\n"
