@@ -45,8 +45,11 @@ void lcd_reset_pointer() {
 	lcd_pixel_pointer = 0;
 }
 
-void lcd_set_pixel(BYTE pixel) {
+void lcd_malloc(){
 	image_to_save = (IMAGE *) malloc(sizeof(IMAGE));
+}
+
+void lcd_set_pixel(BYTE pixel) {
 	image_to_save->Pixels[lcd_pixel_pointer++] = pixel;
 }
 

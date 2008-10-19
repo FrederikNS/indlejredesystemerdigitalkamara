@@ -81,6 +81,7 @@ int main (int argc, char *argv[]) {
 				}
 				printf("Got there\n");
 				filter_image(curr_image, new_image, filter-1, filter_size);
+				lcd_malloc();
 				for(i=0;i<ccd_get_height()*ccd_get_width();i++)
 					lcd_set_pixel(new_image->Pixels[i]);
 				lcd_set_height(curr_image->Height);
