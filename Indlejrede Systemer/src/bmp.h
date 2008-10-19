@@ -32,6 +32,8 @@ typedef struct {
 
 #pragma pack(pop)
 
+int bmp_open(char *File, IMAGE curr_image);
+
 int bmp_gprof(char *File);
 int bmp_ctgc(char *File, char *File2);
 int bmp_test(char *File);
@@ -42,13 +44,17 @@ int bmp_decompress(char *File, char *File2);
 int bmp_info_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih);
 
 /* Open and read the image data of a BMP file */
-int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *pixold);
+int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, IMAGE *image_data);
 
 /* Builds a palette for a 256 grayscale BMP */
 int bmp_palette_creator(BYTE *pal);
 
 /* Converts the bmp image data to grayscale */
 int bmp_colour_to_grayscale(BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *pixold, BYTE *pixnew);
+
+int bmp_header_builder(IMAGE *curr_image, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih);
+
+int bmp_save_image(char *File, IMAGE *curr_image);
 
 /* Store image to BMP file */
 int bmp_save(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *pixnew, BYTE *pal);

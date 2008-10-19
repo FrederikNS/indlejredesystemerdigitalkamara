@@ -7,11 +7,11 @@
 #include "bmp.h"
 #include "types.h"
 
-int bmp_open(char* File, IMAGE current_image) {
+int bmp_open(char* File, IMAGE curr_image) {
 	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
 	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
 	
-	if(bmp_info_reader(File, bmfh, bmih) != 0 || bmp_image_reader(File, bmfh, bmih, current_image.Pixels) != 0)
+	if(bmp_info_reader(File, bmfh, bmih) != 0 || bmp_image_reader(File, bmfh, bmih, curr_image.Pixels) != 0)
 		return 1;
 	return 0;
 }
@@ -161,7 +161,7 @@ int bmp_open(char* File, IMAGE current_image) {
  }
  }*/
 
-int bmp_decompress(char *File, char *File2){
+/*int bmp_decompress(char *File, char *File2){
 	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
 	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
 	BYTE *pixold = 0;
@@ -195,9 +195,9 @@ int bmp_decompress(char *File, char *File2){
 	free(pixold);
 	free(pal);
 	return 0;
-}
+}*/
 
-int bmp_compress(char *File, char *File2){
+/*int bmp_compress(char *File, char *File2){
 	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
 	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
 	BYTE *pixold = 0;
@@ -232,7 +232,7 @@ int bmp_compress(char *File, char *File2){
 	free(pixold);
 	free(pal);
 	return 0;
-}
+}*/
 
 int bmp_info_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih) {
 	FILE* fp;
@@ -249,7 +249,7 @@ int bmp_info_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih) 
 	return 0;
 }
 
-int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *pixold) {
+int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, IMAGE *image_data) {
 	FILE* fp;
 	
 	if((fp = fopen(File, "rb")) == NULL) {
@@ -259,7 +259,7 @@ int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih,
 	
 	fseek(fp, bmfh->BfOffBits, SEEK_SET);
 	
-	fread(pixold, sizeof(char), bmih->BiSizeImage, fp);
+	fread(image_data->Pixels, sizeof(char), bmih->BiSizeImage, fp);
 	
 	fclose(fp);
 	return 0;
@@ -289,6 +289,38 @@ int bmp_colour_to_grayscale(BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE
 	bmih->BiSizeImage /= 3;
 	bmih->BiBitCount = 8;
 	bmfh->BfSize = bmfh->BfOffBits+bmih->BiSizeImage;
+	
+	return 0;
+}
+
+int bmp_header_builder(IMAGE *curr_image, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih){
+	bmfh->BfType = 0x4D42;
+	bmfh->BfSize;
+	bmfh->BfReserved1 = 0;
+	bmfh->BfReserved2 = 0;
+	bmfh->BfOffBits;
+	
+	bmih->BiSize;
+	bmih->BiWidth = curr_image->Width;
+	bmih->BiHeight = curr_image->Height;
+	bmih->BiPlanes = 1;
+	bmih->BiBitCount = 8;
+	bmih->BiCompression = 0;
+	bmih->BiSizeImage;
+	bmih->BiXPelsPerMeter;
+	bmih->BiYPelsPerMeter;
+	bmih->BiClrUsed;
+	bmih->BiClrImportant;
+	return 0;
+}
+
+int bmp_save_image(char *File, IMAGE *curr_image) {
+	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
+	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
+	
+	bmp_header_builder(curr_image, bmfh, bmih);
+	
+	
 	
 	return 0;
 }
