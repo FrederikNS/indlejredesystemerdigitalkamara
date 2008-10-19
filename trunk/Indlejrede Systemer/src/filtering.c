@@ -1,27 +1,13 @@
-#include "filtering.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "filtering.h"
+#include "types.h"
 
 #define STEEPNESS_MAX_VALUE 2550//=(3²*255² + 1²*255²)/255
 #define DEBUG
 
-int fold_mean_small(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
-int fold_mean_width(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
-int fold_mean_height(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
-int fold_mean_large(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height);
-
-int filter_image(unsigned char * image, unsigned char ** image2, char folding_type, int filter_size, int image_width, int image_height) {
-
-    //Allocate memory.
-	unsigned char* new_image = (unsigned char*) malloc(sizeof(char)*image_width*image_height);
-	if (!new_image) {
-		#ifdef DEBUG
-		printf("ERROR: Failed to allocate memory to filtered image.\n");
-		#endif
-		return 1;
-	}
-	*image2 = &new_image[0];
+int filter_image(IMAGE * image, IMAGE * image2, char folding_type, int filter_size) {
 
 	//Fold.
 
@@ -30,7 +16,7 @@ int filter_image(unsigned char * image, unsigned char ** image2, char folding_ty
 	switch (folding_type) {
 		case 0: {
 			//A laplacian fold. Detects the change in steepness around each pixel.
-			success = fold_laplacian(image, *image2, image_width, image_height);
+			success = fold_laplacian(image, image2);
 			break;
 		}
 		case 1: {
@@ -43,31 +29,15 @@ int filter_image(unsigned char * image, unsigned char ** image2, char folding_ty
 			but the length squared. This results in the higher values taking up
 			much more of the grayscale than the low values, making them clearer.
 			*/
-			success = fold_steepness(image, *image2, image_width, image_height);
+			success = fold_steepness(image, image2);
 			break;
 		}
 		case 2: {
 			//A simple mean fold,
-			success = fold_mean(image, *image2, filter_size, image_width, image_height);
+			success = fold_mean(image, image2, filter_size);
 			break;
 		}
-		default: {
-			#ifdef DEBUG
-			printf("ERROR: Selected filter option [%d] does not exist.\n", folding_type);
-			#endif
-			free(new_image);
-			return 1;
-		}
 	}
-
-	if (success) {
-		#ifdef DEBUG
-		printf("ERROR: Failed to fold image.\n");
-		#endif
-		free(new_image);
-		return 1;
-	}
-
 	return 0;
 }
 
@@ -85,7 +55,7 @@ int max(int x, int y) {
     return y;
 }
 
-int fold_mean(unsigned char * image, unsigned char * image2, int filter_size, int image_width, int image_height) {
+int fold_mean(IMAGE *image, IMAGE *image2, int filter_size) {
 
 	/*
 	The algorithm works by taking each pixel,
@@ -114,8 +84,8 @@ int fold_mean(unsigned char * image, unsigned char * image2, int filter_size, in
 
 	int filter_half = (filter_size-1)/2;
 
-	for (i = 0; i < image_width; i++) {
-		for (a = 0; a < image_height; a++) {
+	for (i = 0; i < image->Width; i++) {
+		for (a = 0; a < image->Height; a++) {
 			//Loop through each pixel in the neighbourhood of the current pixel in the new image,
 			//and add it to the temporary sum which is used to determine the current pixels value.
 
@@ -124,50 +94,50 @@ int fold_mean(unsigned char * image, unsigned char * image2, int filter_size, in
 			//Loop for the horizontal part of the pixel-filter area which are outside and on the left of the image.
 			for (e = -filter_half; e < -i; e++) {
 				for (o = -filter_half; o < -a; o++) {//
-					sum += image[0];
+					sum += image->Pixels[0];
 				}
-				for (o = max(-a, -filter_half); o < min(image_height-a, filter_half+1); o++) {
-					sum += image[(a+o)*image_width];
+				for (o = max(-a, -filter_half); o < min(image->Height-a, filter_half+1); o++) {
+					sum += image->Pixels[(a+o)*image->Width];
 				}
-				for (o = image_height-a; o < filter_half+1; o++) {
-					sum += image[image_width*(image_height-1)];
+				for (o = image->Height-a; o < filter_half+1; o++) {
+					sum += image->Pixels[image->Width*(image->Height-1)];
 				}
 			}
 
 			//Loop for the horizontal part of the pixel-filter area which are inside the image.
-			for (e = max(-i, -filter_half); e < min(image_width-i, filter_half+1); e++) {
+			for (e = max(-i, -filter_half); e < min(image->Width-i, filter_half+1); e++) {
 				for (o = -filter_half; o < -a; o++) {
-					sum += image[i+e];
+					sum += image->Pixels[i+e];
 				}
-				for (o = max(-a, -filter_half); o < min(image_height-a, filter_half+1); o++) {
-					sum += image[i+e+(a+o)*image_width];
+				for (o = max(-a, -filter_half); o < min(image->Height-a, filter_half+1); o++) {
+					sum += image->Pixels[i+e+(a+o)*image->Width];
 				}
-				for (o = image_height-a; o < filter_half+1; o++) {
-					sum += image[image_width*(image_height-1)+i+e];
+				for (o = image->Height-a; o < filter_half+1; o++) {
+					sum += image->Pixels[image->Width*(image->Height-1)+i+e];
 				}
 			}
 
 			//Loop for the horizontal part of the pixel-filter area which are outside and on the right of the image.
-			for (e = image_width-i; e < filter_half+1; e++) {
+			for (e = image->Width-i; e < filter_half+1; e++) {
 				for (o = -filter_half; o < -a; o++) {
-					sum += image[image_width-1];
+					sum += image->Pixels[image->Width-1];
 				}
-				for (o = max(-a, -filter_half); o < min(image_height-a, filter_half+1); o++) {
-					sum += image[image_width-1+(a+o)*image_width];
+				for (o = max(-a, -filter_half); o < min(image->Height-a, filter_half+1); o++) {
+					sum += image->Pixels[image->Width-1+(a+o)*image->Width];
 				}
-				for (o = image_height-a; o < filter_half+1; o++) {
-					sum += image[image_width*image_height-1];
+				for (o = image->Height-a; o < filter_half+1; o++) {
+					sum += image->Pixels[image->Width*image->Height-1];
 				}
 			}
 
-			image2[i+a*image_width] = sum/filter_area;
+			image2->Pixels[i+a*image->Width] = sum/filter_area;
 		}
 	}
 
 	return 0;
 }
 
-int fold_laplacian(unsigned char * image, unsigned char * image2, int image_width, int image_height) {
+int fold_laplacian(IMAGE *image, IMAGE *image2) {
 
     /*Specialized, optimized laplacian.
 
@@ -202,175 +172,169 @@ int fold_laplacian(unsigned char * image, unsigned char * image2, int image_widt
 	int new_value = 0; //The value after stretching,
 					   //but possibly with values outside 0-255.
 	int i, a; //i is column number (from bottom to top), a is row number.
-
-	int image_width_less = image_width-1;
-	int image_height_less = image_height-1;
-
+	
 	//Taking care of the special case in which the image is 1 pixel high xor wide.
-	if ((image_height == 1 || image_width == 1) && !(image_width == 1 && image_height == 1)) {
+	if ((image->Height == 1 || image->Width == 1) && !(image->Width == 1 && image->Height == 1)) {
 
 		int length_less;
-		if (image_height == 1) {
-			length_less = image_width_less;
+		if (image->Height == 1) {
+			length_less = image->Width-1;
 		}
 		else {
-			length_less = image_height_less;
+			length_less = image->Height-1;
 		}
 
 		//First pixel
-		new_value = (image[0] - image[1])*5/4 + 123;
-		if (new_value < 0) {(image2)[0] = 0;}
-		else if (new_value > 255) {(image2)[0] = 255;}
-		else {(image2)[0] = new_value;}
+		new_value = (image->Pixels[0] - image->Pixels[1])*5/4 + 123;
+		if (new_value < 0) {(image2->Pixels)[0] = 0;}
+		else if (new_value > 255) {(image2->Pixels)[0] = 255;}
+		else {(image2->Pixels)[0] = new_value;}
 
 		//Middle pixels.
 		for (i = 1; i < length_less; i++) {
-			new_value = (3*image[i]-//"3*" due to reflection.
-				(image[i-1]
-				+image[i + image_width]
-				+image[i+1]))
+			new_value = (3*image->Pixels[i]-//"3*" due to reflection.
+				(image->Pixels[i-1]
+				+image->Pixels[i + image->Width]
+				+image->Pixels[i+1]))
 				*5/4 + 123;
 
-			if (new_value < 0) {(image2)[i] = 0;}
-			else if (new_value > 255) {(image2)[i] = 255;}
-			else {(image2)[i] = new_value;}
+			if (new_value < 0) {(image2->Pixels)[i] = 0;}
+			else if (new_value > 255) {(image2->Pixels)[i] = 255;}
+			else {(image2->Pixels)[i] = new_value;}
 		}
 
 		//Last pixel.
-		new_value = (image[image_width-1] - image[image_width-2])*5/4 + 123;
-		if (new_value < 0) {(image2)[image_width-1] = 0;}
-		else if (new_value > 255) {(image2)[image_width-1] = 255;}
-		else {(image2)[image_width-1] = new_value;}
+		new_value = (image->Pixels[image->Width-1] - image->Pixels[image->Width-2])*5/4 + 123;
+		if (new_value < 0) {(image2->Pixels)[image->Width-1] = 0;}
+		else if (new_value > 255) {(image2->Pixels)[image->Width-1] = 255;}
+		else {(image2->Pixels)[image->Width-1] = new_value;}
 		return 0;
 	}
 	//Taking care of the special case in which the pixel is exactly 1 pixel high and wide.
-	else if (image_width == 1 && image_height == 1) {
-		image2[0] = 0;
+	else if (image->Width == 1 && image->Height == 1) {
+		image2->Pixels[0] = 0;
 		return 0;
 	}
 
 	//General case (image size min. 2X2).
 
 	//Middle.
-	for (i = 1; i < image_width_less; i++) {
-		for (a = 1; a < image_height_less; a++) {
-			new_value = (4*image[i + image_width*a]-
-				(image[i + image_width*(a-1)]
-				+image[i-1 + image_width*a]
-				+image[i + image_width*(a+1)]
-				+image[i+1 + image_width*a]))
+	for (i = 1; i < image->Width-1; i++) {
+		for (a = 1; a < image->Height-1; a++) {
+			new_value = (4*image->Pixels[i + image->Width*a]-
+				(image->Pixels[i + image->Width*(a-1)]
+				+image->Pixels[i-1 + image->Width*a]
+				+image->Pixels[i + image->Width*(a+1)]
+				+image->Pixels[i+1 + image->Width*a]))
 				*5/4 + 123;
 
-			if (new_value < 0) {(image2)[i+a*image_width] = 0;}
-			else if (new_value > 255) {(image2)[i+a*image_width] = 255;}
-			else {(image2)[i+a*image_width] = new_value;}
+			if (new_value < 0) {(image2->Pixels)[i+a*image->Width] = 0;}
+			else if (new_value > 255) {(image2->Pixels)[i+a*image->Width] = 255;}
+			else {(image2->Pixels)[i+a*image->Width] = new_value;}
 		}
 	}
 
 	//Bottom side.
-	for (i = 1; i < image_width_less; i++) {
-		new_value = (3*image[i]-//"3*" due to reflection.
-			(image[i-1]
-			+image[i + image_width]
-			+image[i+1]))
+	for (i = 1; i < image->Width-1; i++) {
+		new_value = (3*image->Pixels[i]-//"3*" due to reflection.
+			(image->Pixels[i-1]
+			+image->Pixels[i + image->Width]
+			+image->Pixels[i+1]))
 			*5/4 + 123;
 
-		if (new_value < 0) {(image2)[i] = 0;}
-		else if (new_value > 255) {(image2)[i] = 255;}
-		else {(image2)[i] = new_value;}
+		if (new_value < 0) {(image2->Pixels)[i] = 0;}
+		else if (new_value > 255) {(image2->Pixels)[i] = 255;}
+		else {(image2->Pixels)[i] = new_value;}
 	}
 
 	//Top side.
-	for (i = 1; i < image_width_less; i++) {
-		new_value = (3*image[i+image_width*image_height_less]-//"3*" due to reflection.
-			(image[i+image_width*image_height_less-1]
-			+image[i+image_width*image_height_less+1]
-			+image[i+image_width*(image_height_less-1)]))
+	for (i = 1; i < image->Width-1; i++) {
+		new_value = (3*image->Pixels[i+image->Width*image->Height-1]-//"3*" due to reflection.
+			(image->Pixels[i+image->Width*image->Height-1-1]
+			+image->Pixels[i+image->Width*image->Height-1+1]
+			+image->Pixels[i+image->Width*(image->Height-1-1)]))
 			*5/4 + 123;
 
-		if (new_value < 0) {(image2)[i+image_width*image_height_less] = 0;}
-		else if (new_value > 255) {(image2)[i+image_width*image_height_less] = 255;}
-		else {(image2)[i+image_width*image_height_less] = new_value;}
+		if (new_value < 0) {(image2->Pixels)[i+image->Width*image->Height-1] = 0;}
+		else if (new_value > 255) {(image2->Pixels)[i+image->Width*image->Height-1] = 255;}
+		else {(image2->Pixels)[i+image->Width*image->Height-1] = new_value;}
 	}
 
 	//Left side.
-	for (a = 1; a < image_height_less; a++) {
-		new_value = (3*image[image_width*a]-//"3*" due to reflection.
-			(image[image_width*(a-1)]
-			+image[image_width*(a+1)]
-			+image[1 + image_width*a]))
+	for (a = 1; a < image->Height-1; a++) {
+		new_value = (3*image->Pixels[image->Width*a]-//"3*" due to reflection.
+			(image->Pixels[image->Width*(a-1)]
+			+image->Pixels[image->Width*(a+1)]
+			+image->Pixels[1 + image->Width*a]))
 			*5/4 + 123;
 
-		if (new_value < 0) {(image2)[image_width*a] = 0;}
-		else if (new_value > 255) {(image2)[image_width*a] = 255;}
-		else {(image2)[image_width*a] = new_value;}
+		if (new_value < 0) {(image2->Pixels)[image->Width*a] = 0;}
+		else if (new_value > 255) {(image2->Pixels)[image->Width*a] = 255;}
+		else {(image2->Pixels)[image->Width*a] = new_value;}
 	}
 
 	//Right side.
-	for (a = 1; a < image_height_less; a++) {
-		new_value = (3*image[image_width_less+image_width*a]-//"3*" due to reflection.
-			(image[image_width_less+image_width*(a-1)]
-			+image[image_width_less+image_width*(a+1)]
-			+image[image_width_less+image_width*a-1]))
+	for (a = 1; a < image->Height-1; a++) {
+		new_value = (3*image->Pixels[image->Width-1+image->Width*a]-//"3*" due to reflection.
+			(image->Pixels[image->Width-1+image->Width*(a-1)]
+			+image->Pixels[image->Width-1+image->Width*(a+1)]
+			+image->Pixels[image->Width-1+image->Width*a-1]))
 			*5/4 + 123;
 
-		if (new_value < 0) {(image2)[image_width_less+image_width*a] = 0;}
-		else if (new_value > 255) {(image2)[image_width_less+image_width*a] = 255;}
-		else {(image2)[image_width_less+image_width*a] = new_value;}
+		if (new_value < 0) {(image2->Pixels)[image->Width-1+image->Width*a] = 0;}
+		else if (new_value > 255) {(image2->Pixels)[image->Width-1+image->Width*a] = 255;}
+		else {(image2->Pixels)[image->Width-1+image->Width*a] = new_value;}
 	}
 
 	//Bottom-left corner.
-	new_value = (2*image[0]-//"2*" due to reflection.
-		(image[1]
-		+image[image_width]))
+	new_value = (2*image->Pixels[0]-//"2*" due to reflection.
+		(image->Pixels[1]
+		+image->Pixels[image->Width]))
 		*5/4 + 123;
 
-	if (new_value < 0) {(image2)[0] = 0;}
-	else if (new_value > 255) {(image2)[0] = 255;}
-	else {(image2)[0] = new_value;}
+	if (new_value < 0) {(image2->Pixels)[0] = 0;}
+	else if (new_value > 255) {(image2->Pixels)[0] = 255;}
+	else {(image2->Pixels)[0] = new_value;}
 
 	//Bottom-right corner.
-	new_value = (2*image[image_width-1]-//"2*" due to reflection.
-		(image[2*image_width-1]
-		+image[image_width-2]))
+	new_value = (2*image->Pixels[image->Width-1]-//"2*" due to reflection.
+		(image->Pixels[2*image->Width-1]
+		+image->Pixels[image->Width-2]))
 		*5/4 + 123;
 
-	if (new_value < 0) {(image2)[image_width-1] = 0;}
-	else if (new_value > 255) {(image2)[image_width-1] = 255;}
-	else {(image2)[image_width-1] = new_value;}
+	if (new_value < 0) {(image2->Pixels)[image->Width-1] = 0;}
+	else if (new_value > 255) {(image2->Pixels)[image->Width-1] = 255;}
+	else {(image2->Pixels)[image->Width-1] = new_value;}
 
 	//Top-left corner.
-	new_value = (2*image[image_width*(image_height-1)]-//"2*" due to reflection.
-		(image[image_width*(image_height-1)+1]
-		+image[image_width*(image_height-2)]))
+	new_value = (2*image->Pixels[image->Width*(image->Height-1)]-//"2*" due to reflection.
+		(image->Pixels[image->Width*(image->Height-1)+1]
+		+image->Pixels[image->Width*(image->Height-2)]))
 		*5/4 + 123;
 
-	if (new_value < 0) {(image2)[image_width*(image_height-1)] = 0;}
-	else if (new_value > 255) {(image2)[image_width*(image_height-1)] = 255;}
-	else {(image2)[image_width*(image_height-1)] = new_value;}
+	if (new_value < 0) {(image2->Pixels)[image->Width*(image->Height-1)] = 0;}
+	else if (new_value > 255) {(image2->Pixels)[image->Width*(image->Height-1)] = 255;}
+	else {(image2->Pixels)[image->Width*(image->Height-1)] = new_value;}
 
 	//Top-right corner.
-	new_value = (2*image[image_width*image_height-1]-//"2*" due to reflection.
-		(image[image_width*image_height-2]
-		+image[image_width*(image_height-1)-1]))
+	new_value = (2*image->Pixels[image->Width*image->Height-1]-//"2*" due to reflection.
+		(image->Pixels[image->Width*image->Height-2]
+		+image->Pixels[image->Width*(image->Height-1)-1]))
 		*5/4 + 123;
 
-	if (new_value < 0) {(image2)[image_width*image_height-1] = 0;}
-	else if (new_value > 255) {(image2)[image_width*image_height-1] = 255;}
-	else {(image2)[image_width*image_height-1] = new_value;}
+	if (new_value < 0) {(image2->Pixels)[image->Width*image->Height-1] = 0;}
+	else if (new_value > 255) {(image2->Pixels)[image->Width*image->Height-1] = 255;}
+	else {(image2->Pixels)[image->Width*image->Height-1] = new_value;}
 
 	return 0;
 
 }
 
-int fold_steepness(unsigned char * image, unsigned char * image2, int image_width, int image_height) {
+int fold_steepness(IMAGE *image, IMAGE *image2) {
 
 	int sum_horizontal = 0; //Horizontal sum of filter.
 	int sum_vertical = 0; //Vertical sum of filter.
 	int i, a; //i is column number (from bottom to top), a is row number.
-
-	int image_width_less = image_width-1;
-	int image_height_less = image_height-1;
 
 	/*
 	Horizontal filter:
@@ -387,193 +351,193 @@ int fold_steepness(unsigned char * image, unsigned char * image2, int image_widt
 	*/
 
 	//Handle the special case in which the image is 1 pixel wide and >1 pixel high.
-	if (image_width == 1 && image_height != 1) {
-		image2[0] = (3*image[1]-3*image[0])*(3*image[1]-3*image[0])/STEEPNESS_MAX_VALUE;
-		for (a = 1; a < image_height_less; a++) {
-			image2[a] = (3*image[a+1]-3*image[a-1])*(3*image[a+1]-3*image[a-1])
+	if (image->Width == 1 && image->Height != 1) {
+		image2->Pixels[0] = (3*image->Pixels[1]-3*image->Pixels[0])*(3*image->Pixels[1]-3*image->Pixels[0])/STEEPNESS_MAX_VALUE;
+		for (a = 1; a < image->Height-1; a++) {
+			image2->Pixels[a] = (3*image->Pixels[a+1]-3*image->Pixels[a-1])*(3*image->Pixels[a+1]-3*image->Pixels[a-1])
 				/STEEPNESS_MAX_VALUE;
 		}
-		image2[image_height_less] =
-			(3*image[image_height_less]-3*image[image_height_less-1])*
-			(3*image[image_height_less]-3*image[image_height_less-1])/STEEPNESS_MAX_VALUE;
+		image2->Pixels[image->Height-1] =
+			(3*image->Pixels[image->Height-1]-3*image->Pixels[image->Height-1-1])*
+			(3*image->Pixels[image->Height-1]-3*image->Pixels[image->Height-1-1])/STEEPNESS_MAX_VALUE;
 		return 0;
 	}
 	//Handle the special case in which the image is >1 pixel wide and 1 pixel high.
-	else if (image_width != 1 && image_height == 1) {
-		image2[0] = (3*image[0]-3*image[1])*(3*image[0]-3*image[1])/STEEPNESS_MAX_VALUE;
-		for (i = 1; i < image_width_less; i++) {
-			image2[i] = (3*image[i-1]-3*image[i+1])*(3*image[i-1]-3*image[i+1])
+	else if (image->Width != 1 && image->Height == 1) {
+		image2->Pixels[0] = (3*image->Pixels[0]-3*image->Pixels[1])*(3*image->Pixels[0]-3*image->Pixels[1])/STEEPNESS_MAX_VALUE;
+		for (i = 1; i < image->Width-1; i++) {
+			image2->Pixels[i] = (3*image->Pixels[i-1]-3*image->Pixels[i+1])*(3*image->Pixels[i-1]-3*image->Pixels[i+1])
 				/STEEPNESS_MAX_VALUE;
 		}
-		image2[image_width_less] =
-			(3*image[image_width_less-1]-3*image[image_width_less])*
-			(3*image[image_width_less-1]-3*image[image_width_less])/STEEPNESS_MAX_VALUE;
+		image2->Pixels[image->Width-1] =
+			(3*image->Pixels[image->Width-1-1]-3*image->Pixels[image->Width-1])*
+			(3*image->Pixels[image->Width-1-1]-3*image->Pixels[image->Width-1])/STEEPNESS_MAX_VALUE;
 		return 0;
 	}
 	//Handle the special case in which the image is 1 pixel wide and 1 pixel high.
-	else if (image_width == 1 && image_height == 1) {
-		image2[0] = 0;
+	else if (image->Width == 1 && image->Height == 1) {
+		image2->Pixels[0] = 0;
 		return 0;
 	}
 
 	//Middle.
-	for (i = 1; i < image_width_less; i++) {
-		for (a = 1; a < image_height_less; a++) {
+	for (i = 1; i < image->Width-1; i++) {
+		for (a = 1; a < image->Height-1; a++) {
 			sum_horizontal = (
-				image[i + image_width*(a-1)-1]
-				+image[i + image_width*a-1]
-				+image[i + image_width*(a+1)-1]
-			    -(image[i + image_width*(a-1)+1]
-				+image[i + image_width*a+1]
-				+image[i + image_width*(a+1)+1]));
+				image->Pixels[i + image->Width*(a-1)-1]
+				+image->Pixels[i + image->Width*a-1]
+				+image->Pixels[i + image->Width*(a+1)-1]
+			    -(image->Pixels[i + image->Width*(a-1)+1]
+				+image->Pixels[i + image->Width*a+1]
+				+image->Pixels[i + image->Width*(a+1)+1]));
 			sum_vertical = (
-				image[i + image_width*(a+1)-1]
-				+image[i + image_width*(a+1)]
-				+image[i + image_width*(a+1)+1]
-				-(image[i + image_width*(a-1)-1]
-				+image[i + image_width*(a-1)]
-				+image[i + image_width*(a-1)+1]));
-			image2[i + image_width*a] = (
+				image->Pixels[i + image->Width*(a+1)-1]
+				+image->Pixels[i + image->Width*(a+1)]
+				+image->Pixels[i + image->Width*(a+1)+1]
+				-(image->Pixels[i + image->Width*(a-1)-1]
+				+image->Pixels[i + image->Width*(a-1)]
+				+image->Pixels[i + image->Width*(a-1)+1]));
+			image2->Pixels[i + image->Width*a] = (
 					(sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 					/STEEPNESS_MAX_VALUE);
 		}
 	}
 
 	//Bottom side.
-	for (i = 1; i < image_width_less; i++) {
+	for (i = 1; i < image->Width-1; i++) {
 		sum_horizontal = (
-			2*image[i -1]//"2*" due to reflection.
-			+image[i + image_width-1]
-			-(2*image[i + 1]//"2*" due to reflection.
-			+image[i + image_width+1]));
+			2*image->Pixels[i -1]//"2*" due to reflection.
+			+image->Pixels[i + image->Width-1]
+			-(2*image->Pixels[i + 1]//"2*" due to reflection.
+			+image->Pixels[i + image->Width+1]));
 		sum_vertical = (
-			image[i + image_width-1]
-			+image[i + image_width]
-			+image[i + image_width+1]
-			-(image[i -1]
-			+image[i]
-			+image[i+1]));
+			image->Pixels[i + image->Width-1]
+			+image->Pixels[i + image->Width]
+			+image->Pixels[i + image->Width+1]
+			-(image->Pixels[i -1]
+			+image->Pixels[i]
+			+image->Pixels[i+1]));
 
-		image2[i] = (
+		image2->Pixels[i] = (
 				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 				/STEEPNESS_MAX_VALUE;
 	}
 
 	//Top side.
-	for (i = 1; i < image_width_less; i++) {
+	for (i = 1; i < image->Width-1; i++) {
 		sum_horizontal = (
-			image[i -1 + image_width*(image_height_less-1)]
-			+2*image[i -1 + image_width*image_height_less]//"2*" due to reflection.
-			-(image[i +1 + image_width*(image_height_less-1)]
-			+2*image[i +1 + image_width*image_height_less]));//"2*" due to reflection.
+			image->Pixels[i -1 + image->Width*(image->Height-1-1)]
+			+2*image->Pixels[i -1 + image->Width*image->Height-1]//"2*" due to reflection.
+			-(image->Pixels[i +1 + image->Width*(image->Height-1-1)]
+			+2*image->Pixels[i +1 + image->Width*image->Height-1]));//"2*" due to reflection.
 		sum_vertical = (
-			image[i + image_width*image_height_less-1]
-			+image[i + image_width*image_height_less]
-			+image[i + image_width*image_height_less+1]
-			-(image[i+ image_width*(image_height_less-1)-1]
-			+image[i+image_width*(image_height_less-1)]
-			+image[i+image_width*(image_height_less-1)+1]));
+			image->Pixels[i + image->Width*image->Height-1-1]
+			+image->Pixels[i + image->Width*image->Height-1]
+			+image->Pixels[i + image->Width*image->Height-1+1]
+			-(image->Pixels[i+ image->Width*(image->Height-1-1)-1]
+			+image->Pixels[i+image->Width*(image->Height-1-1)]
+			+image->Pixels[i+image->Width*(image->Height-1-1)+1]));
 
-		image2[i+image_width*image_height_less] = (
+		image2->Pixels[i+image->Width*image->Height-1] = (
 				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 				/STEEPNESS_MAX_VALUE;
 	}
 
 	//Left side.
-	for (a = 1; a < image_height_less; a++) {
+	for (a = 1; a < image->Height-1; a++) {
 		sum_horizontal = (
-			image[image_width*(a-1)]
-			+image[image_width*a]
-			+image[image_width*(a+1)]
-			-(image[image_width*(a-1)+1]
-			+image[image_width*a+1]
-			+image[image_width*(a+1)+1]));
+			image->Pixels[image->Width*(a-1)]
+			+image->Pixels[image->Width*a]
+			+image->Pixels[image->Width*(a+1)]
+			-(image->Pixels[image->Width*(a-1)+1]
+			+image->Pixels[image->Width*a+1]
+			+image->Pixels[image->Width*(a+1)+1]));
 		sum_vertical = (
-			2*image[image_width*(a+1)]//"2*" due to reflection.
-			+image[image_width*(a+1)+1]
-			-(2*image[image_width*(a-1)]//"2*" due to reflection.
-			+image[image_width*(a-1)+1]));
-		image2[image_width*a] = (
+			2*image->Pixels[image->Width*(a+1)]//"2*" due to reflection.
+			+image->Pixels[image->Width*(a+1)+1]
+			-(2*image->Pixels[image->Width*(a-1)]//"2*" due to reflection.
+			+image->Pixels[image->Width*(a-1)+1]));
+		image2->Pixels[image->Width*a] = (
 				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 				/STEEPNESS_MAX_VALUE;
 	}
 
 	//Right side.
-	for (a = 1; a < image_height_less; a++) {
+	for (a = 1; a < image->Height-1; a++) {
 		sum_horizontal = (
-			image[-2+image_width*a]
-			+image[-2+image_width*(a+1)]
-			+image[-2+image_width*(a+2)]
-			-(image[-1+image_width*a]
-			+image[-1+image_width*(a+1)]
-			+image[-1+image_width*(a+2)]));
+			image->Pixels[-2+image->Width*a]
+			+image->Pixels[-2+image->Width*(a+1)]
+			+image->Pixels[-2+image->Width*(a+2)]
+			-(image->Pixels[-1+image->Width*a]
+			+image->Pixels[-1+image->Width*(a+1)]
+			+image->Pixels[-1+image->Width*(a+2)]));
 		sum_vertical = (
-			2*image[-1+image_width*(a+2)]//"2*" due to reflection.
-			+image[-2+image_width*(a+2)]
-			-(2*image[-1+image_width*a]//"2*" due to reflection.
-			+image[-2+image_width*a]));
-		image2[image_width*(a+1)-1] = (
+			2*image->Pixels[-1+image->Width*(a+2)]//"2*" due to reflection.
+			+image->Pixels[-2+image->Width*(a+2)]
+			-(2*image->Pixels[-1+image->Width*a]//"2*" due to reflection.
+			+image->Pixels[-2+image->Width*a]));
+		image2->Pixels[image->Width*(a+1)-1] = (
 				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 				/STEEPNESS_MAX_VALUE;
 	}
 
 	//Bottom-left corner.
 	sum_horizontal = (
-		2*image[0]//"2*" due to reflection.
-		+image[image_width]
-		-(2*image[1]//"2*" due to reflection.
-		+image[image_width+1]));
+		2*image->Pixels[0]//"2*" due to reflection.
+		+image->Pixels[image->Width]
+		-(2*image->Pixels[1]//"2*" due to reflection.
+		+image->Pixels[image->Width+1]));
 	sum_vertical = (
-		2*image[image_width]//"2*" due to reflection.
-		+image[image_width+1]
-		-(2*image[0]//"2*" due to reflection.
-		+image[1]));
-	image2[0] = (
+		2*image->Pixels[image->Width]//"2*" due to reflection.
+		+image->Pixels[image->Width+1]
+		-(2*image->Pixels[0]//"2*" due to reflection.
+		+image->Pixels[1]));
+	image2->Pixels[0] = (
 			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 			/STEEPNESS_MAX_VALUE;
 
 	//Bottom-right corner.
 	sum_horizontal = (
-		2*image[image_width-2]//"2*" due to reflection.
-		+image[image_width*2-2]
-		-(2*image[image_width-1]//"2*" due to reflection.
-		+image[image_width*2-1]));
+		2*image->Pixels[image->Width-2]//"2*" due to reflection.
+		+image->Pixels[image->Width*2-2]
+		-(2*image->Pixels[image->Width-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*2-1]));
 	sum_vertical = (
-		2*image[image_width*2-1]//"2*" due to reflection.
-		+image[image_width*2-2]
-		-(2*image[image_width-1]//"2*" due to reflection.
-		+image[image_width-2]));
-	image2[image_width-1] = (
+		2*image->Pixels[image->Width*2-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*2-2]
+		-(2*image->Pixels[image->Width-1]//"2*" due to reflection.
+		+image->Pixels[image->Width-2]));
+	image2->Pixels[image->Width-1] = (
 			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 			/STEEPNESS_MAX_VALUE;
 
 	//Top-left corner.
 	sum_horizontal = (
-		2*image[image_width*image_height_less]//"2*" due to reflection.
-		+image[image_width*(image_height_less-1)]
-		-(2*image[image_width*image_height_less+1]//"2*" due to reflection.
-		+image[image_width*(image_height_less-1)+1]));
+		2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*(image->Height-1-1)]
+		-(2*image->Pixels[image->Width*image->Height-1+1]//"2*" due to reflection.
+		+image->Pixels[image->Width*(image->Height-1-1)+1]));
 	sum_vertical = (
-		2*image[image_width*image_height_less]//"2*" due to reflection.
-		+image[image_width*image_height_less+1]
-		-(2*image[image_width*(image_height_less-1)]//"2*" due to reflection.
-		+image[image_width*(image_height_less-1)+1]));
-	image2[image_width*image_height_less] = (
+		2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*image->Height-1+1]
+		-(2*image->Pixels[image->Width*(image->Height-1-1)]//"2*" due to reflection.
+		+image->Pixels[image->Width*(image->Height-1-1)+1]));
+	image2->Pixels[image->Width*image->Height-1] = (
 			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 			/STEEPNESS_MAX_VALUE;
 
 	//Top-right corner.
 	sum_horizontal = (
-		2*image[image_width*image_height-2]//"2*" due to reflection.
-		+image[image_width*image_height_less-2]
-		-(2*image[image_width*image_height-1]//"2*" due to reflection.
-		+image[image_width*image_height_less-1]));
+		2*image->Pixels[image->Width*image->Height-2]//"2*" due to reflection.
+		+image->Pixels[image->Width*image->Height-1-2]
+		-(2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*image->Height-1-1]));
 	sum_vertical = (
-		2*image[image_width*image_height-1]//"2*" due to reflection.
-		+image[image_width*image_height-2]
-		-(2*image[image_width*image_height_less-1]//"2*" due to reflection.
-		+image[image_width*image_height_less-2]));
-	image2[image_width*image_height-1] = (
+		2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*image->Height-2]
+		-(2*image->Pixels[image->Width*image->Height-1-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*image->Height-1-2]));
+	image2->Pixels[image->Width*image->Height-1] = (
 			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 			/STEEPNESS_MAX_VALUE;
 

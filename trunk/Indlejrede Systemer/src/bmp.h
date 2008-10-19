@@ -6,8 +6,6 @@
 #ifndef __BMP_H
 #define __BMP_H
 
-#include "types.h"
-
 #pragma pack(push, 1)
 
 typedef struct {
@@ -19,7 +17,7 @@ typedef struct {
 } BITMAPFILEHEADER;
 
 typedef struct {
-	WORD 		BiSize;				/* Size of this structure 		  */
+	WORD		BiSize;				/* Size of this structure 		  */
 	WORD		BiWidth;			/* Width of the image in bytes    */
 	WORD		BiHeight;			/* Height of the image in bytes   */
 	HALFWORD	BiPlanes;			/* Should be 1 					  */
