@@ -6,6 +6,8 @@
 #ifndef __BMP_H
 #define __BMP_H
 
+#include "types.h"
+
 #pragma pack(push, 1)
 
 typedef struct {
@@ -32,8 +34,6 @@ typedef struct {
 
 #pragma pack(pop)
 
-int bmp_open(char *File, IMAGE curr_image);
-
 int bmp_gprof(char *File);
 int bmp_ctgc(char *File, char *File2);
 int bmp_test(char *File);
@@ -58,6 +58,9 @@ int bmp_save_image(char *File, IMAGE *curr_image);
 
 /* Store image to BMP file */
 int bmp_save(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *pixnew, BYTE *pal);
+
+int bmp_open(char *File, IMAGE *current_image);
+
 
 /* Decompress bmp image data */
 int decompress(BYTE * compressed_image, BYTE ** decompressed_image, int image_width, int image_height);
