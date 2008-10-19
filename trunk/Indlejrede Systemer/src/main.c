@@ -48,7 +48,6 @@ int main (int argc, char *argv[]) {
 		for(i = 0;i<ccd_get_height()*ccd_get_width();i++)
 			curr_image->Pixels[i] = ccd_get_pixel();
 
-		curr
 		test_filtering(curr_image);
 
 		printf("\nDo you want to manipulate the picture? [yes/no]\n");
