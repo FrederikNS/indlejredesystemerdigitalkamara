@@ -20,6 +20,8 @@ void lcd_show_image();
 /* reset the internal pixel pointer */
 void lcd_reset_pointer();
 
+void lcd_malloc();
+
 /* set the next four pixels of the image */
 void lcd_set_pixel(BYTE pixel);
 
