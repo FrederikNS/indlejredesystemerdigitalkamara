@@ -125,8 +125,7 @@ int decompress(BYTE * compressed_image, BYTE ** decompressed_image, int image_wi
 			index += 2;
 		}
 		else {
-			//Prerequest; the image width in bytes is a multiple of 4.
-			//There, do practically nothing when handling lines.
+			//Do practically nothing when handling lines.
 			index += 2;
 		}
 	}

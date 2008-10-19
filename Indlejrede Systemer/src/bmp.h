@@ -34,6 +34,7 @@ typedef struct {
 
 #pragma pack(pop)
 
+int bmp_gprof(char *File);
 int bmp_ctgc(char *File, char *File2);
 int bmp_test(char *File);
 int bmp_compress(char *File, char *File2);
