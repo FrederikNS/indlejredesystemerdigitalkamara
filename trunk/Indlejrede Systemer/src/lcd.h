@@ -21,9 +21,9 @@ void lcd_show_image();
 void lcd_reset_pointer();
 
 /* set the next four pixels of the image */
-void lcd_set_pixel(char pixel);
+void lcd_set_pixel(BYTE pixel);
 
 /* set the next four pixels of the image */
-void lcd_set_pixels(int pixels);
+void lcd_set_pixels(WORD pixels);
 
 #endif /* __LCD_H */

@@ -273,6 +273,10 @@ int bmp_image_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih,
 	printf("Phail4\n");
 
 	printf("Survived image reader\n");
+	
+	image_data->Width=bmih->BiWidth;
+	image_data->Height=bmih->BiHeight;
+	
 	return 0;
 }
 
