@@ -24,7 +24,7 @@ void ccd_capture_image() {
 
 	current_image = (IMAGE *) malloc(sizeof(IMAGE));
 
-	if(bmp_open("example24.bmp", current_image)) {
+	if(bmp_open("resultx_-1.bmp", current_image)) {
 		printf("ccd_capture_image(): failed to open file\n");
 		exit(0);
 	}
