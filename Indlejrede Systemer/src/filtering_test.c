@@ -1,19 +1,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "filtering.h"
+#include "types.h"
 
 #define STEEPNESS_MAX_VALUE 2550//=(3²*255² + 1²*255²)/255
 
-int test_filtering(unsigned char * pixnew, int image_width, int image_height) {
+int test_filtering(IMAGE *old_image, IMAGE *new_image) {
 
 	/*Test.*/
 
 	printf("Testing 3 filters. 0 for successful testing, anything else failure.\n");
 
-	unsigned char *pixfilter = 0;
-	unsigned char *pixtest = 0;
-	filter_image(pixnew, &pixfilter, 0, 3, image_width, image_height);
-	test_fold_laplacian(pixnew, &pixtest, image_width, image_height);
+	IMAGE *test_image = (IMAGE *) malloc(sizeof(IMAGE));
+	
+	filter_image(old_image, new_image, 0, 3);
+	test_fold_laplacian(old_image, test_image);
 	int test_result = test_image_equality(pixfilter, pixtest, image_width, image_height);
 	free(pixfilter);
 	free(pixtest);
