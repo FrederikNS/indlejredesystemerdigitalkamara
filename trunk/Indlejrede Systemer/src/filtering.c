@@ -170,8 +170,8 @@ int fold_mean(unsigned char * image, unsigned char * image2, int filter_size, in
 int fold_laplacian(unsigned char * image, unsigned char * image2, int image_width, int image_height) {
 
     /*Specialized, optimized laplacian.
-	in order to
-    Filter is:
+
+	Filter is:
     0   -1   0
     -1   4  -1
     0   -1   0
@@ -206,8 +206,16 @@ int fold_laplacian(unsigned char * image, unsigned char * image2, int image_widt
 	int image_width_less = image_width-1;
 	int image_height_less = image_height-1;
 
-	//Taking care of the special case in which the image is 1 pixel high.
-	if (image_height == 1) {
+	//Taking care of the special case in which the image is 1 pixel high xor wide.
+	if ((image_height == 1 || image_width == 1) && !(image_width == 1 && image_height == 1)) {
+
+		int length_less;
+		if (image_height == 1) {
+			length_less = image_width_less;
+		}
+		else {
+			length_less = image_height_less;
+		}
 
 		//First pixel
 		new_value = (image[0] - image[1])*5/4 + 123;
@@ -216,7 +224,7 @@ int fold_laplacian(unsigned char * image, unsigned char * image2, int image_widt
 		else {(image2)[0] = new_value;}
 
 		//Middle pixels.
-		for (i = 1; i < image_width_less; i++) {
+		for (i = 1; i < length_less; i++) {
 			new_value = (3*image[i]-//"3*" due to reflection.
 				(image[i-1]
 				+image[i + image_width]
@@ -233,22 +241,9 @@ int fold_laplacian(unsigned char * image, unsigned char * image2, int image_widt
 		if (new_value < 0) {(image2)[image_width-1] = 0;}
 		else if (new_value > 255) {(image2)[image_width-1] = 255;}
 		else {(image2)[image_width-1] = new_value;}
-	}
-	if ((image_width == 1 && image_height == 2) || (image_width == 2 && image_height == 1)) {
-		new_value = (image[0] - image[1])*5/4 + 123;
-
-		if (new_value < 0) {(image2)[0] = 0;}
-		else if (new_value > 255) {(image2)[0] = 255;}
-		else {(image2)[0] = new_value;}
-
-		new_value = (image[1] - image[0])*5/4 + 123;
-
-		if (new_value < 0) {(image2)[1] = 0;}
-		else if (new_value > 255) {(image2)[1] = 255;}
-		else {(image2)[1] = new_value;}
-
 		return 0;
 	}
+	//Taking care of the special case in which the pixel is exactly 1 pixel high and wide.
 	else if (image_width == 1 && image_height == 1) {
 		image2[0] = 0;
 		return 0;
@@ -391,16 +386,34 @@ int fold_steepness(unsigned char * image, unsigned char * image2, int image_widt
 	-1 -1 -1
 	*/
 
-	if (image_width == 2 && image_height == 1) {
-		image[0] = (3*image[0]-3*image[1])*(3*image[0]-3*image[1])/STEEPNESS_MAX_VALUE;
-		image[1] = (3*image[0]-3*image[1])*(3*image[0]-3*image[1])/STEEPNESS_MAX_VALUE;
+	//Handle the special case in which the image is 1 pixel wide and >1 pixel high.
+	if (image_width == 1 && image_height != 1) {
+		image2[0] = (3*image[1]-3*image[0])*(3*image[1]-3*image[0])/STEEPNESS_MAX_VALUE;
+		for (a = 1; a < image_height_less; a++) {
+			image2[a] = (3*image[a+1]-3*image[a-1])*(3*image[a+1]-3*image[a-1])
+				/STEEPNESS_MAX_VALUE;
+		}
+		image2[image_height_less] =
+			(3*image[image_height_less]-3*image[image_height_less-1])*
+			(3*image[image_height_less]-3*image[image_height_less-1])/STEEPNESS_MAX_VALUE;
+		return 0;
 	}
-	else if (image_width == 1 && image_height == 1) {
-		image[0] = (3*image[1]-3*image[0])*(3*image[1]-3*image[0])/STEEPNESS_MAX_VALUE;
-		image[1] = (3*image[1]-3*image[0])*(3*image[1]-3*image[0])/STEEPNESS_MAX_VALUE;
+	//Handle the special case in which the image is >1 pixel wide and 1 pixel high.
+	else if (image_width != 1 && image_height == 1) {
+		image2[0] = (3*image[0]-3*image[1])*(3*image[0]-3*image[1])/STEEPNESS_MAX_VALUE;
+		for (i = 1; i < image_width_less; i++) {
+			image2[i] = (3*image[i-1]-3*image[i+1])*(3*image[i-1]-3*image[i+1])
+				/STEEPNESS_MAX_VALUE;
+		}
+		image2[image_width_less] =
+			(3*image[image_width_less-1]-3*image[image_width_less])*
+			(3*image[image_width_less-1]-3*image[image_width_less])/STEEPNESS_MAX_VALUE;
+		return 0;
 	}
+	//Handle the special case in which the image is 1 pixel wide and 1 pixel high.
 	else if (image_width == 1 && image_height == 1) {
-		image[0] = 0;
+		image2[0] = 0;
+		return 0;
 	}
 
 	//Middle.

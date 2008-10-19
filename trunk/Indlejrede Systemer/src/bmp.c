@@ -6,10 +6,10 @@
 #include "compression_test.h"
 #include "bmp.h"
 
-//This method tests filtering and compression.
-//When compiling for release, comment this method out and
-//comment out the header files with "test" in their names,
-//thereby easily excluding unnecessary source code.
+//This function tests filtering and compression.
+//When compiling for release, comment this function out,
+//the gprof function, and comment out the header files with "test"
+//in their names, thereby easily excluding unnecessary source code.
 int bmp_test(char *File) {
 	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
 	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
@@ -41,6 +41,81 @@ int bmp_test(char *File) {
 
 		//Test compression.
 		test_compression();
+	}
+	free(bmfh);
+	free(bmih);
+	free(pixold);
+	free(pixnew);
+	free(pal);
+	return 0;
+}
+
+//Runs time-consuming functions a lot of times
+//so gprof can get a good estimate of them.
+//They are all run with worst-case input,
+//since the worst-case input is the most hindering to the user,
+//and the most relevant.
+int bmp_gprof(char *File) {
+	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
+	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
+	BYTE *pixold = 0;
+	BYTE *pixnew = 0;
+	BYTE *pal = 0;
+	if(bmfh && bmih){
+		bmp_info_reader(File, bmfh, bmih);
+		pixold = (BYTE *) malloc(sizeof(BYTE)*bmih->BiSizeImage);
+		pixnew = (BYTE *) malloc(sizeof(BYTE)*(bmih->BiSizeImage/3));
+		if(!pixold||!pixnew){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_image_reader(File, bmfh, bmih, pixold);
+		pal = (BYTE *) malloc(sizeof(BYTE)*1024);
+		if(!pal){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_palette_creator(pal);
+		bmp_colour_to_grayscale(bmfh, bmih, pixold, pixnew);
+
+		int image_width = 512, image_height = 512;
+
+
+
+		//Run filters.
+		unsigned char *pixfilter = 0;
+		int i;
+		//Laplacian.
+		for (i = 0; i < 100; i++) {
+			filter_image(pixnew, &pixfilter, 0, 3, image_width, image_height);
+			free(pixfilter);
+		}
+		//Steepness.
+		for (i = 0; i < 100; i++) {
+			filter_image(pixnew, &pixfilter, 1, 3, image_width, image_height);
+			free(pixfilter);
+		}
+		//Mean (3X3).
+		/*for (i = 0; i < 100; i++) {
+			filter_image(pixnew, &pixfilter, 2, 3, image_width, image_height);
+			free(pixfilter);
+		}*/
+		//Mean (5X5).
+		for (i = 0; i < 100; i++) {
+			filter_image(pixnew, &pixfilter, 2, 5, image_width, image_height);
+			free(pixfilter);
+		}
+
+		BYTE *pixcom = 0;
+		BYTE *pixdecom = 0;
+		//Compression/decompression.
+		int size = 0;
+		for (i = 0; i < 100; i++) {
+			compress(pixnew, &pixcom, image_width, image_height, &size);
+			decompress(pixcom, &pixdecom, image_width, image_height);
+			free(pixcom);
+			free(pixdecom);
+		}
 	}
 	free(bmfh);
 	free(bmih);

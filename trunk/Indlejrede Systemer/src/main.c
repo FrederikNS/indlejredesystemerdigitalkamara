@@ -8,11 +8,14 @@ int main (int argc, char *argv[]) {
 	printf("Start of main.\n");
 	#endif
 
+	/*char File[] = "./example24.bmp";
+	bmp_gprof(File);*/
+
 	printf("Testing...\n");
 	char File_[]="./example24.bmp";
 	bmp_test(File_);
 
-	printf("Image filtering...\n");
+	/*printf("Image filtering...\n");
 	char File[]="./example24.bmp";
 	char File2[]="./result.bmp";
 	bmp_ctgc(File,File2);
@@ -25,7 +28,7 @@ int main (int argc, char *argv[]) {
 	printf("Compression...\n");
 	char File5[]="./resultx_-1.bmp";
 	char File6[]="./result_compressed.bmp";
-	bmp_compress(File5,File6);
+	bmp_compress(File5,File6);*/
 
 	#ifdef DEBUG
 	printf("End of main.\n");
