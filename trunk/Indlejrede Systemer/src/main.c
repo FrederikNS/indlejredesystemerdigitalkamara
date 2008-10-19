@@ -15,6 +15,7 @@
 
 int main (int argc, char *argv[]) {
 	char command[BUFFER_LENGTH];
+	char command2;
 	char filter;
 	char stayAlive = 1;
 	int i;
@@ -48,7 +49,7 @@ int main (int argc, char *argv[]) {
 		printf("\nDo you want to manipulate the picture? [y/n]\n");
 		while(command[0] != 'y' || command[0] != 'n'){
 			fgets(command, BUFFER_LENGTH, stdin);
-			sscanf(command, "%c", command);
+			sscanf(command, "%c", command2);
 		}
 		if(command[0] == 'y') {
 			filter = 0;
