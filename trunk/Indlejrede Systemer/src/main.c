@@ -39,6 +39,9 @@ int main (int argc, char *argv[]) {
 		ccd_capture_image();
 		for(i = 0;i<ccd_get_height()*ccd_get_width();i++)
 			curr_image->Pixels[i] = ccd_get_pixel();
+		
+		curr_image->Height=ccd_get_height();
+		curr_image->Width=ccd_get_width();
 
 		test_filtering(curr_image);
 		printf("\nDo you want to manipulate the picture? [yes/no]\n");
