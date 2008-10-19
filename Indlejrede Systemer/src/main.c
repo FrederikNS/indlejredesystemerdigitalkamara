@@ -47,9 +47,10 @@ int main (int argc, char *argv[]) {
 
 		test_filtering(curr_image);
 		printf("\nDo you want to manipulate the picture? [y/n]\n");
-		while(command[0] != 'y' || command[0] != 'n'){
+		while(command2 != 121 && command2 != 110){
 			fgets(command, BUFFER_LENGTH, stdin);
-			sscanf(command, "%c", command2);
+			command2 = command[0];
+			printf("Command: %d\n", command2);
 		}
 		if(command[0] == 'y') {
 			filter = 0;
@@ -59,10 +60,14 @@ int main (int argc, char *argv[]) {
 				   "3. Low-pass (Noise Remover)\n"
 				   "\n"
 				   "Enter a number:\n");
-			while(filter <= 1 && filter >= 3) {
+			printf("Filter: %d\n", filter);
+			while(filter < 1 || filter > 3) {
+				printf("Testy_a\n");
 				fgets(command, BUFFER_LENGTH, stdin);
-				sscanf(command, "%c", filter);
+				printf("Testy\n");
+				sscanf(command, "%d", &filter);
 			}
+			printf("Filter is now: %d\n", filter);
 			if(filter >= 1 && filter <= 3) {
 				if(filter == 3) {
 					printf("How large do you wan't the filter mask to be? (it must be a positive and odd number)");
@@ -74,6 +79,7 @@ int main (int argc, char *argv[]) {
 				} else {
 					filter_size = 0;
 				}
+				printf("Got there\n");
 				filter_image(curr_image, new_image, filter-1, filter_size);
 				for(i=0;i<ccd_get_height()*ccd_get_width();i++)
 					lcd_set_pixel(new_image->Pixels[i]);
