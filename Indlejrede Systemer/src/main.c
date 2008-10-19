@@ -7,6 +7,7 @@
 #include "types.h"
 
 #define DEBUG
+//#define TEST
 
 #define BUFFER_LENGTH 255
 
@@ -15,9 +16,8 @@
 
 int main (int argc, char *argv[]) {
 	char command[BUFFER_LENGTH];
-	char command2;
-	char filter;
-	char stayAlive = 1;
+	char command2 = 0;
+	int filter;
 	int i;
 	int filter_size;
 	IMAGE *curr_image = (IMAGE *) malloc(sizeof(IMAGE));
@@ -36,64 +36,78 @@ int main (int argc, char *argv[]) {
 	 */
 
 	printf("Welcome to Frederik & Melvin's camera software\n"
-		   "\n");
-	while (stayAlive) {
-		ccd_capture_image();
-		for(i = 0;i<ccd_get_height()*ccd_get_width();i++)
-			curr_image->Pixels[i] = ccd_get_pixel();
+			"\n");
+	ccd_capture_image();
+	for(i = 0;i<ccd_get_height()*ccd_get_width();i++)
+		curr_image->Pixels[i] = ccd_get_pixel();
 
-		curr_image->Height=ccd_get_height();
-		curr_image->Width=ccd_get_width();
+	curr_image->Height=ccd_get_height();
+	curr_image->Width=ccd_get_width();
 
-		test_filtering(curr_image);
-		printf("\nDo you want to manipulate the picture? [y/n]\n");
-		while(command2 != 121 && command2 != 110){
-			fgets(command, BUFFER_LENGTH, stdin);
-			command2 = command[0];
-			printf("Command: %d\n", command2);
-		}
-		if(command[0] == 'y') {
-			filter = 0;
-			printf("\nPlease choose a filter to apply: \n"
-				   "1. High-pass Line Detection\n"
-				   "2. High-pass Edge Detection\n"
-				   "3. Low-pass (Noise Remover)\n"
-				   "\n"
-				   "Enter a number:\n");
-			printf("Filter: %d\n", filter);
-			while(filter < 1 || filter > 3) {
-				printf("Testy_a\n");
-				fgets(command, BUFFER_LENGTH, stdin);
-				printf("Testy\n");
-				sscanf(command, "%d", &filter);
-			}
-			printf("Filter is now: %d\n", filter);
-			if(filter >= 1 && filter <= 3) {
-				if(filter == 3) {
-					printf("How large do you wan't the filter mask to be? (it must be a positive and odd number)");
-					filter_size=0;
-					while(filter_size > 0 && filter_size % 2 == 1) {
-						fgets(command, BUFFER_LENGTH, stdin);
-						sscanf(command, "%d", filter_size);
-					}
-				} else {
-					filter_size = 0;
-				}
-				printf("Got there\n");
-				filter_image(curr_image, new_image, filter-1, filter_size);
-				lcd_malloc();
-				for(i=0;i<ccd_get_height()*ccd_get_width();i++)
-					lcd_set_pixel(new_image->Pixels[i]);
-				lcd_set_height(curr_image->Height);
-				lcd_set_width(curr_image->Width);
-			} else {
-				for(i=0;i<ccd_get_height()*ccd_get_width();i++)
-					lcd_set_pixel(curr_image->Pixels[i]);
-			}
-			lcd_show_image();
-		}
-		free(curr_image);
+#ifdef TEST
+	test_filtering(curr_image);
+#endif
+	printf("\nDo you want to manipulate the picture? [y/n]\n");
+	while(command2 != 121 && command2 != 110){
+		fgets(command, BUFFER_LENGTH, stdin);
+		command2 = command[0];
+		printf("Command: %d\n", command2);
 	}
+	if(command[0] == 'y') {
+		filter = 0;
+		printf("\nPlease choose a filter to apply: \n"
+				"1. High-pass Line Detection\n"
+				"2. High-pass Edge Detection\n"
+				"3. Low-pass (Noise Remover)\n"
+				"\n"
+				"Enter a number:\n");
+		printf("Filter: %d\n", filter);
+		while(filter < 1 || filter > 3) {
+			printf("Testy_a\n");
+			fgets(command, BUFFER_LENGTH, stdin);
+			printf("Testy\n");
+			sscanf(command, "%d", &filter);
+		}
+		printf("Filter is now: %d\n", filter);
+		if(filter >= 1 && filter <= 3) {
+			if(filter == 3) {
+				printf("How large do you wan't the filter mask to be? (it must be a positive and odd number)");
+				filter_size=0;
+				while(!(filter_size > 0 && filter_size % 2 == 1)) {
+					fgets(command, BUFFER_LENGTH, stdin);
+					sscanf(command, "%d", &filter_size);
+				}
+			} else {
+				filter_size = 0;
+			}
+			printf("Got there\n");
+			filter_image(curr_image, new_image, filter-1, filter_size);
+			printf("Got there2\n");
+
+			for (i = 0; i < 10; i++) {
+				printf("%x\n", curr_image->Pixels[i]);
+			}
+			lcd_malloc();
+			for(i=0;i<ccd_get_height()*ccd_get_width();i++)
+				lcd_set_pixel(new_image->Pixels[i]);
+			lcd_set_height(curr_image->Height);
+			lcd_set_width(curr_image->Width);
+			printf("Got there3\n");
+
+		}
+	} else {
+		lcd_malloc();
+		for(i=0;i<ccd_get_height()*ccd_get_width();i++)
+			lcd_set_pixel(curr_image->Pixels[i]);
+		lcd_set_height(curr_image->Height);
+		lcd_set_width(curr_image->Width);
+	}
+	printf("Got there4\n");
+	lcd_show_image();
+	printf("Got there5\n");
+	printf("Got there6\n");
+	//free(curr_image);
+	printf("Got there7\n");
 	return 0;
 }
 /*#ifdef DEBUG
