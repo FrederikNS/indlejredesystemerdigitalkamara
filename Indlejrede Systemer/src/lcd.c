@@ -32,6 +32,8 @@ void lcd_set_height(int height) {
 }
 
 void lcd_show_image() {
+	image_to_save.Width = image_width;
+	image_to_save.Height = image_height;
 	if(bmp_save_image("output.bmp", &image_to_save)) {
 		printf("lcd_show_image(): failed to save file\n");
 	}

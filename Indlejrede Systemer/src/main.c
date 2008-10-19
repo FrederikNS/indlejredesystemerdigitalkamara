@@ -83,6 +83,8 @@ int main (int argc, char *argv[]) {
 				filter_image(curr_image, new_image, filter-1, filter_size);
 				for(i=0;i<ccd_get_height()*ccd_get_width();i++)
 					lcd_set_pixel(new_image->Pixels[i]);
+				lcd_set_height(curr_image->Height);
+				lcd_set_width(curr_image->Width);
 			} else {
 				for(i=0;i<ccd_get_height()*ccd_get_width();i++)
 					lcd_set_pixel(curr_image->Pixels[i]);

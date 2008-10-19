@@ -327,7 +327,7 @@ int bmp_save_image(char *File, IMAGE *curr_image) {
 	
 	bmp_palette_creator(pal);
 	
-	bmp_save(File, bmfh, bmih, curr_image->Pixels, pal); 
+	bmp_save(File, bmfh, bmih, curr_image->Pixels, pal);
 	
 	return 0;
 }
@@ -343,7 +343,7 @@ int bmp_save(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *p
 	fwrite(bmfh, sizeof(BITMAPFILEHEADER), 1, fp);
 	fwrite(bmih, sizeof(BITMAPINFOHEADER), 1, fp);
 	
-	fwrite(pal, sizeof(char), 1024, fp);
+	fwrite(pal, sizeof(char), 256*4, fp);
 	
 	fwrite(pixnew, sizeof(char), bmih->BiSizeImage, fp);
 	
