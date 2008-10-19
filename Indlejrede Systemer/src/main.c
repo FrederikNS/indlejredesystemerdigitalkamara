@@ -80,10 +80,7 @@ int main (int argc, char *argv[]) {
 			} else {
 				filter_size = 0;
 			}
-			printf("Got there\n");
 			filter_image(curr_image, new_image, filter-1, filter_size);
-			printf("Got there2\n");
-
 			for (i = 0; i < 10; i++) {
 				printf("%x\n", curr_image->Pixels[i]);
 			}
@@ -92,8 +89,6 @@ int main (int argc, char *argv[]) {
 				lcd_set_pixel(new_image->Pixels[i]);
 			lcd_set_height(curr_image->Height);
 			lcd_set_width(curr_image->Width);
-			printf("Got there3\n");
-
 		}
 	} else {
 		lcd_malloc();
@@ -102,12 +97,6 @@ int main (int argc, char *argv[]) {
 		lcd_set_height(curr_image->Height);
 		lcd_set_width(curr_image->Width);
 	}
-	printf("Got there4\n");
-	lcd_show_image();
-	printf("Got there5\n");
-	printf("Got there6\n");
-	//free(curr_image);
-	printf("Got there7\n");
 	return 0;
 }
 /*#ifdef DEBUG
