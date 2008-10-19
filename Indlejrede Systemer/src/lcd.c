@@ -12,7 +12,7 @@
 /* todo: add image data structure */
 
 /* image representation compabible with bmp library */
-static IMAGE image;
+static IMAGE image_to_save;
 
 /* width and height of the image */
 static int image_width;
@@ -32,9 +32,10 @@ void lcd_set_height(int height) {
 }
 
 void lcd_show_image() {
-	/*if(!bmp_save("output.bmp", &image)) {
+	if(!bmp_save_image("output.bmp", &image_to_save)) {
+
 		printf("lcd_show_image(): failed to save file\n");
-	}*/
+	}
 }
 
 void lcd_reset_pointer() {
@@ -43,11 +44,11 @@ void lcd_reset_pointer() {
 	lcd_pixel_pointer = 0;
 }
 
-void lcd_set_pixel(char pixel) {
-	image.Pixels[lcd_pixel_pointer++] = pixel;
+void lcd_set_pixel(BYTE pixel) {
+	image_to_save.Pixels[lcd_pixel_pointer++] = pixel;
 }
 
-void lcd_set_pixels(int pixels) {
+void lcd_set_pixels(WORD pixels) {
 
 	/* todo: store (four) pixels */
 
