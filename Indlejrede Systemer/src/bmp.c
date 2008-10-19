@@ -161,78 +161,78 @@ int bmp_open(char *File, IMAGE *current_image) {
  }
  }*/
 
-/*int bmp_decompress(char *File, char *File2){
- BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
- BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
- BYTE *pixold = 0;
- BYTE *pal = 0;
- if(bmfh && bmih){
- bmp_info_reader(File, bmfh, bmih);
- pixold = (BYTE *) malloc(sizeof(BYTE)*bmih->BiSizeImage);
- if(!pixold){
- printf("Premature return");
- return 1;
- }
- bmp_image_reader(File, bmfh, bmih, pixold);
- pal = (BYTE *) malloc(sizeof(BYTE)*1024);
- if(!pal){
- printf("Premature return");
- return 1;
- }
- bmp_palette_creator(pal);
- 
- BYTE * pixdecompressed = 0;
- decompress(pixold, &pixdecompressed, bmih->BiWidth, bmih->BiHeight);
- 
- bmih->BiCompression = 0;
- bmih->BiSizeImage = (bmih->BiHeight)*(bmih->BiWidth);
- 
- bmp_save(File2, bmfh, bmih, pixdecompressed, pal);
- 
- }
- free(bmfh);
- free(bmih);
- free(pixold);
- free(pal);
- return 0;
- }*/
+int bmp_decompress(char *File, char *File2){
+	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
+	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
+	BYTE *pixold = 0;
+	BYTE *pal = 0;
+	if(bmfh && bmih){
+		bmp_info_reader(File, bmfh, bmih);
+		pixold = (BYTE *) malloc(sizeof(BYTE)*bmih->BiSizeImage);
+		if(!pixold){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_image_reader(File, bmfh, bmih, pixold);
+		pal = (BYTE *) malloc(sizeof(BYTE)*1024);
+		if(!pal){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_palette_creator(pal);
+		
+		BYTE * pixdecompressed = 0;
+		decompress(pixold, &pixdecompressed, bmih->BiWidth, bmih->BiHeight);
+		
+		bmih->BiCompression = 0;
+		bmih->BiSizeImage = (bmih->BiHeight)*(bmih->BiWidth);
+		
+		bmp_save(File2, bmfh, bmih, pixdecompressed, pal);
+		
+	}
+	free(bmfh);
+	free(bmih);
+	free(pixold);
+	free(pal);
+	return 0;
+}
 
-/*int bmp_compress(char *File, char *File2){
- BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
- BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
- BYTE *pixold = 0;
- BYTE *pal = 0;
- if(bmfh && bmih){
- bmp_info_reader(File, bmfh, bmih);
- pixold = (BYTE *) malloc(sizeof(BYTE)*bmih->BiSizeImage);
- if(!pixold){
- printf("Premature return");
- return 1;
- }
- bmp_image_reader(File, bmfh, bmih, pixold);
- pal = (BYTE *) malloc(sizeof(BYTE)*1024);
- if(!pal){
- printf("Premature return");
- return 1;
- }
- bmp_palette_creator(pal);
- 
- BYTE * pixdecompressed = 0;
- int size = 0;
- compress(pixold, &pixdecompressed, bmih->BiWidth, bmih->BiHeight, &size);
- 
- bmih->BiCompression = 1;
- bmih->BiSizeImage = size;
- 
- bmp_save(File2, bmfh, bmih, pixdecompressed, pal);
- 
- }
- free(bmfh);
- free(bmih);
- free(pixold);
- free(pal);
- return 0;
- }*/
+int bmp_compress(char *File, char *File2){
+	BITMAPFILEHEADER *bmfh = (BITMAPFILEHEADER *) malloc(sizeof(BITMAPFILEHEADER));
+	BITMAPINFOHEADER *bmih = (BITMAPINFOHEADER *) malloc(sizeof(BITMAPINFOHEADER));
+	BYTE *pixold = 0;
+	BYTE *pal = 0;
+	if(bmfh && bmih){
+		bmp_info_reader(File, bmfh, bmih);
+		pixold = (BYTE *) malloc(sizeof(BYTE)*bmih->BiSizeImage);
+		if(!pixold){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_image_reader(File, bmfh, bmih, pixold);
+		pal = (BYTE *) malloc(sizeof(BYTE)*1024);
+		if(!pal){
+			printf("Premature return");
+			return 1;
+		}
+		bmp_palette_creator(pal);
+		
+		BYTE * pixdecompressed = 0;
+		int size = 0;
+		compress(pixold, &pixdecompressed, bmih->BiWidth, bmih->BiHeight, &size);
+		
+		bmih->BiCompression = 1;
+		bmih->BiSizeImage = size;
+		
+		bmp_save(File2, bmfh, bmih, pixdecompressed, pal);
+		
+	}
+	free(bmfh);
+	free(bmih);
+	free(pixold);
+	free(pal);
+	return 0;
+}
 
 int bmp_info_reader(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih) {
 	FILE* fp;
