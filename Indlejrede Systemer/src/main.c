@@ -18,7 +18,7 @@ int main (int argc, char *argv[]) {
 	char stayAlive = 1;
 	int i;
 	int filter_size;
-	IMAGE *curr_image;
+	IMAGE *curr_image = (IMAGE *) malloc(sizeof(IMAGE));
 	IMAGE *new_image = (IMAGE *) malloc(sizeof(IMAGE));
 	
 	/*
@@ -37,7 +37,6 @@ int main (int argc, char *argv[]) {
 		   "\n");
 	while (stayAlive) {
 		ccd_capture_image();
-		curr_image = (IMAGE *) malloc(sizeof(IMAGE));
 		for(i = 0;i<ccd_get_height()*ccd_get_width();i++)
 			curr_image->Pixels[i] = ccd_get_pixel();
 		
