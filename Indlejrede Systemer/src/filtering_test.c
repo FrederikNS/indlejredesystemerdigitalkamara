@@ -21,17 +21,17 @@ int test_filtering(IMAGE *old_image) {
 
 	filter_image(old_image, new_image, 0, 3);
 	test_fold_laplacian(old_image, test_image);
-	int test_result = test_image_equality(new_image, old_image);
+	int test_result = test_image_equality(new_image, test_image);
 	printf("Test laplacian: %d\n", test_result);
 
 	filter_image(old_image, new_image, 1, 3);
-	test_fold_steepness(old_image, new_image);
-	test_result = test_image_equality(old_image, new_image);
+	test_fold_steepness(old_image, test_image);
+	test_result = test_image_equality(new_image, test_image);
 	printf("Test steepness: %d\n", test_result);
 
 	filter_image(old_image, new_image, 2, 3);
-	test_fold_mean(old_image, new_image, 3);
-	test_result = test_image_equality(old_image, new_image);
+	test_fold_mean(old_image, test_image, 3);
+	test_result = test_image_equality(new_image, test_image);
 	printf("Test mean: %d\n", test_result);
 
 	free(test_image);
