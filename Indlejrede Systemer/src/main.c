@@ -51,7 +51,6 @@ int main (int argc, char *argv[]) {
 	while(command2 != 121 && command2 != 110){
 		fgets(command, BUFFER_LENGTH, stdin);
 		command2 = command[0];
-		printf("Command: %d\n", command2);
 	}
 	if(command[0] == 'y') {
 		filter = 0;
@@ -61,14 +60,9 @@ int main (int argc, char *argv[]) {
 				"3. Low-pass (Noise Remover)\n"
 				"\n"
 				"Enter a number:\n");
-		printf("Filter: %d\n", filter);
 		while(filter < 1 || filter > 3) {
-			printf("Testy_a\n");
 			fgets(command, BUFFER_LENGTH, stdin);
-			printf("Testy\n");
-			sscanf(command, "%d", &filter);
 		}
-		printf("Filter is now: %d\n", filter);
 		if(filter >= 1 && filter <= 3) {
 			if(filter == 3) {
 				printf("How large do you wan't the filter mask to be? (it must be a positive and odd number)");
