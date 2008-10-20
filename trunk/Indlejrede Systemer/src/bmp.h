@@ -52,7 +52,7 @@ int bmp_palette_creator(BYTE *pal);
 /* Converts the bmp image data to grayscale */
 int bmp_colour_to_grayscale(BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *pixold, BYTE *pixnew);
 
-int bmp_header_builder(IMAGE *curr_image, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih);
+int bmp_header_builder(IMAGE *curr_image, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, WORD compressed);
 
 int bmp_save_image(char *File, IMAGE *curr_image);
 
@@ -61,8 +61,5 @@ int bmp_save(char *File, BITMAPFILEHEADER *bmfh, BITMAPINFOHEADER *bmih, BYTE *p
 
 int bmp_open(char *File, IMAGE *current_image);
 
-
-/* Decompress bmp image data */
-int decompress(BYTE * compressed_image, BYTE ** decompressed_image, int image_width, int image_height);
 
 #endif /* __BMP_H */

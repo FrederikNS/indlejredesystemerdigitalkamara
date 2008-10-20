@@ -4,9 +4,12 @@
 #define COMPRESSION_H_
 
 //Decompress a bmp image encoded with run length encoding.
-int decompress(BYTE * compressed_image, BYTE ** decompressed_image, int image_width, int image_height);
+int decompress(IMAGE *de_image, IMAGE *co_image);
 
 //Compress a bmp image with run length encoding.
-int compress(BYTE * decompressed_image, BYTE ** compressed_image, int image_width, int image_height, int * memory_needed);
+int compress(IMAGE *de_image, IMAGE *co_image);
+
+//Get size of image if it was compressed.
+WORD size_compressed(IMAGE *image);
 
 #endif /* COMPRESSION_H_ */

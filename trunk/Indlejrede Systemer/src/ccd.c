@@ -30,6 +30,10 @@ void ccd_capture_image() {
 	}
 }
 
+void ccd_free() {
+	free(current_image);
+}
+
 void ccd_reset_pointer() {
 
 	/* reset */
