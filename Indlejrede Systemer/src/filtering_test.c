@@ -19,6 +19,8 @@ int test_filtering(IMAGE *old_image) {
 		return 1;
 	}
 
+	new_image->Width = old_image->Width;
+	new_image->Height = old_image->Height;
 	filter_image(old_image, new_image, 0, 3);
 	test_fold_laplacian(old_image, test_image);
 	int test_result = test_image_equality(new_image, test_image);
@@ -186,9 +188,14 @@ int test_fold_steepness(IMAGE * image, IMAGE * image2) {
 				}
 				for (o = max(-a, -filter_half); o < min(image->Height-a, filter_half+1); o++) {
 					temp_sum += image->Pixels[image->Width*(a+o+1)-1]*(filter[(e+filter_half)+filter_width*(o+filter_half)]);
+					temp_sum2 += image->Pixels[image->Width*(a+o+1)-1]*(filter2[(e+filter_half)+filter_width*(o+filter_half)]);
+				}
+				for (o = image->Height-a; o < filter_half+1; o++) {
+					temp_sum += image->Pixels[image->Width*image->Height-1]*(filter[(e+filter_half)+filter_width*(o+filter_half)]);
 					temp_sum2 += image->Pixels[image->Width*image->Height-1]*(filter2[(e+filter_half)+filter_width*(o+filter_half)]);
 				}
 			}
+
 
 			//Take the filters sum, and divide it by the calculated sum.
 
@@ -279,7 +286,7 @@ int test_image_equality(IMAGE * image, IMAGE * image2) {
 
 	for (i = 0; i < image->Width; i++) {
 		for (a = 0; a < image->Height; a++) {
-			if (image->Pixels[i+image->Width*a] != image2->Pixels[i+image->Width*a]) {
+			if ((image->Pixels[i+image->Width*a]) != (image2->Pixels[i+image->Width*a])) {
 				printf("First value: %d,  second value: %d,  pos: (%d, %d)\n",
 							image->Pixels[i+image->Width*a],
 							image2->Pixels[i+image->Width*a],

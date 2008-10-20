@@ -18,35 +18,33 @@ int test_compress() {
 
 	/*   Test 1: Handle 3*5 image with different values.   */
 
-	BYTE *compressed_image = 0, *decompressed_image = 0;
-
 	//Allocate memory.
-	BYTE* new_image = (BYTE*) malloc(sizeof(char)*3*5);
-	if (!new_image) {
-		#ifdef DEBUG
+	IMAGE *com_image = (IMAGE*) malloc(sizeof(IMAGE));
+	IMAGE *decom_image = (IMAGE*) malloc(sizeof(IMAGE));
+	if (!com_image || !decom_image) {
 		printf("ERROR: Failed to allocate memory to test decompressed image.\n");
-		#endif
 		return 1;
 	}
-	decompressed_image = new_image;
+	decom_image->Width = 5;
+	decom_image->Height = 3;
 
-	decompressed_image[0] = 128;
-	decompressed_image[1] = 128;
-	decompressed_image[2] = 128;
-	decompressed_image[3] = 128;
-	decompressed_image[4] = 128;
+	decom_image->Pixels[0] = 128;
+	decom_image->Pixels[1] = 128;
+	decom_image->Pixels[2] = 128;
+	decom_image->Pixels[3] = 128;
+	decom_image->Pixels[4] = 128;
 
-	decompressed_image[5] = 128;
-	decompressed_image[6] = 220;
-	decompressed_image[7] = 230;
-	decompressed_image[8] = 150;
-	decompressed_image[9] = 100;
+	decom_image->Pixels[5] = 128;
+	decom_image->Pixels[6] = 220;
+	decom_image->Pixels[7] = 230;
+	decom_image->Pixels[8] = 150;
+	decom_image->Pixels[9] = 100;
 
-	decompressed_image[10] = 150;
-	decompressed_image[11] = 150;
-	decompressed_image[12] = 150;
-	decompressed_image[13] = 120;
-	decompressed_image[14] = 120;
+	decom_image->Pixels[10] = 150;
+	decom_image->Pixels[11] = 150;
+	decom_image->Pixels[12] = 150;
+	decom_image->Pixels[13] = 120;
+	decom_image->Pixels[14] = 120;
 
 	//Output image should be: 5 128 0 0 1 128 1 220 1 230 1 150 1 100 0 0 3 150 2 120 0 1
 	BYTE desired_image[22];
@@ -74,36 +72,25 @@ int test_compress() {
 	desired_image[21] = 1;
 
 	//Check.
-	int memory_need;
-	compress(decompressed_image, &compressed_image, 5, 3, &memory_need);
+	compress(decom_image, com_image);
 	int i;
 	for (i = 0; i < 22; i++) {
-		if (desired_image[i] != compressed_image[i]) {
+		if (desired_image[i] != com_image->Pixels[i]) {
 			//Fail.
-			printf("Value of compressed image at index %d is %d\n", i, compressed_image[i]);
-			free(compressed_image);
-			free(decompressed_image);
+			printf("Value of compressed image at index %d is %d\n", i, com_image->Pixels[i]);
+			free(com_image);
+			free(decom_image);
 			return 1;
 		}
 	}
 
-	free(compressed_image);
-
 	/*   Test 2: Handle sequence of the same color of length >255.   */
 
-	free(decompressed_image);
-	//Allocate memory.
-	new_image = (BYTE*) malloc(sizeof(char)*300);
-	if (!new_image) {
-		#ifdef DEBUG
-		printf("ERROR: Failed to allocate memory to test decompressed image.\n");
-		#endif
-		return 1;
-	}
-	decompressed_image = new_image;
+	decom_image->Width = 300;
+	decom_image->Height = 1;
 
 	for (i = 0; i < 300; i++) {
-		decompressed_image[i] = 128;
+		decom_image->Pixels[i] = 128;
 	}
 
 	//Output image should be: 255 128 45 128 0 1
@@ -115,19 +102,19 @@ int test_compress() {
 	desired_image[5] = 1;
 
 	//Check.
-	compress(decompressed_image, &compressed_image, 300, 1, &memory_need);
+	compress(decom_image, com_image);
 	for (i = 0; i < 6; i++) {
-		if (desired_image[i] != compressed_image[i]) {
+		if (desired_image[i] != com_image->Pixels[i]) {
 			//Fail.
-			printf("Value of compressed image at index %d is %d\n", i, compressed_image[i]);
-			free(compressed_image);
-			free(decompressed_image);
+			printf("Value of compressed image at index %d is %d\n", i, com_image->Pixels[i]);
+			free(com_image);
+			free(decom_image);
 			return 1;
 		}
 	}
 
-	free(compressed_image);
-	free(decompressed_image);
+	free(com_image);
+	free(decom_image);
 
 	return 0;
 }
@@ -139,17 +126,15 @@ int test_decompress() {
 	//Test 2: Handle different values.
 	//Test 3: Handle line shift.
 
-	BYTE *compressed_image = 0, *decompressed_image = 0;
-
 	//Allocate memory.
-	BYTE* new_image = (BYTE*) malloc(sizeof(char)*8*3);
-	if (!new_image) {
-		#ifdef DEBUG
-		printf("ERROR: Failed to allocate memory to test compressed image.\n");
-		#endif
+	IMAGE *decom_image = (IMAGE*) malloc(sizeof(IMAGE));
+	IMAGE *com_image = (IMAGE*) malloc(sizeof(IMAGE));
+	if (!com_image || !decom_image) {
+		printf("ERROR: Failed to allocate memory to test decompressed image.\n");
 		return 1;
 	}
-	compressed_image = new_image;
+	com_image->Width = 24;
+	com_image->Height = 1;
 
 	#ifdef DEBUG
 	printf("Control reaches part before test 1.\n");
@@ -159,19 +144,19 @@ int test_decompress() {
 	//Create a sample with 16 pixels with color 128.
 	//Sample looks like this: 16 128 0 1
 	//And should be decompressed like this: 128 128 128 128 128 128 128 128...
-	compressed_image[0] = 0x10;
-	compressed_image[1] = 0x80;
-	compressed_image[2] = 0;
-	compressed_image[3] = 1;//End of bitmap.
+	com_image->Pixels[0] = 0x10;
+	com_image->Pixels[1] = 0x80;
+	com_image->Pixels[2] = 0;
+	com_image->Pixels[3] = 1;//End of bitmap.
 
-	decompress(compressed_image, &decompressed_image, 24, 1);
+	decompress(com_image, decom_image);
 
 	int i = 0;
 	for (i = 0; i < 16; i++) {
-		if (decompressed_image[i] != 0x80) {
+		if (decom_image->Pixels[i] != 0x80) {
 			//Fail.
-			free(compressed_image);
-			free(decompressed_image);
+			free(com_image);
+			free(decom_image);
 			return 1;
 		}
 	}
@@ -185,42 +170,41 @@ int test_decompress() {
 	//and 4 pixels with color 128.
 	//Sample looks like this: 2 128 3 255 4 128 0 1
 	//And should be decompressed like this: 128 128 255 255 255 128 128 128 128
-	compressed_image[0] = 0x02;
-	compressed_image[1] = 0x80;
-	compressed_image[2] = 0x03;
-	compressed_image[3] = 0xFF;
-	compressed_image[4] = 0x04;
-	compressed_image[5] = 0x80;
-	compressed_image[6] = 0;
-	compressed_image[7] = 1;//End of bitmap.
+	com_image->Pixels[0] = 0x02;
+	com_image->Pixels[1] = 0x80;
+	com_image->Pixels[2] = 0x03;
+	com_image->Pixels[3] = 0xFF;
+	com_image->Pixels[4] = 0x04;
+	com_image->Pixels[5] = 0x80;
+	com_image->Pixels[6] = 0;
+	com_image->Pixels[7] = 1;//End of bitmap.
 
-	free(decompressed_image);
-	decompress(compressed_image, &decompressed_image, 24, 1);
+	decompress(com_image, decom_image);
 
 	for (i = 0; i < 2; i++) {
-		if (decompressed_image[i] != 0x80) {
+		if (decom_image->Pixels[i] != 0x80) {
 			//Fail.
-			printf("Value of decompressed image at %d is %d\n", i, decompressed_image[i]);
-			free(compressed_image);
-			free(decompressed_image);
+			printf("Value of decompressed image at %d is %d\n", i, decom_image->Pixels[i]);
+			free(com_image);
+			free(decom_image);
 			return 1;
 		}
 	}
 	for (i = 2; i < 5; i++) {
-		if (decompressed_image[i] != 0xFF) {
+		if (decom_image->Pixels[i] != 0xFF) {
 			//Fail.
-			printf("Value of decompressed image at %d is %d\n", i, decompressed_image[i]);
-			free(compressed_image);
-			free(decompressed_image);
+			printf("Value of decompressed image at %d is %d\n", i, decom_image->Pixels[i]);
+			free(com_image);
+			free(decom_image);
 			return 1;
 		}
 	}
 	for (i = 5; i < 9; i++) {
-		if (decompressed_image[i] != 0x80) {
+		if (decom_image->Pixels[i] != 0x80) {
 			//Fail.
-			printf("Value of decompressed image at %d is %d\n", i, decompressed_image[i]);
-			free(compressed_image);
-			free(decompressed_image);
+			printf("Value of decompressed image at %d is %d\n", i, decom_image->Pixels[i]);
+			free(com_image);
+			free(decom_image);
 			return 1;
 		}
 	}
@@ -234,24 +218,23 @@ int test_decompress() {
 	//and 5 pixels with color 128.
 	//Sample looks like this: 3 128 0 0 5 128 0 1
 	//And should be decompressed like this: 128 128 128 128 128 128 128 128
-	compressed_image[0] = 0x03;
-	compressed_image[1] = 0x80;
-	compressed_image[2] = 0x00;//Line break.
-	compressed_image[3] = 0x00;
-	compressed_image[4] = 0x05;
-	compressed_image[5] = 0x80;
-	compressed_image[6] = 0;
-	compressed_image[7] = 1;//End of bitmap.
+	com_image->Pixels[0] = 0x03;
+	com_image->Pixels[1] = 0x80;
+	com_image->Pixels[2] = 0x00;//Line break.
+	com_image->Pixels[3] = 0x00;
+	com_image->Pixels[4] = 0x05;
+	com_image->Pixels[5] = 0x80;
+	com_image->Pixels[6] = 0;
+	com_image->Pixels[7] = 1;//End of bitmap.
 
-	free(decompressed_image);
-	decompress(compressed_image, &decompressed_image, 24, 1);
+	decompress(com_image, decom_image);
 
 	for (i = 0; i < 7; i++) {
-		if (decompressed_image[i] != 0x80) {
+		if (decom_image->Pixels[i] != 0x80) {
 			//Fail.
-			printf("Value of decompressed image at %d is %d\n", i, decompressed_image[i]);
-			free(compressed_image);
-			free(decompressed_image);
+			printf("Value of decompressed image at %d is %d\n", i, decom_image->Pixels[i]);
+			free(com_image);
+			free(decom_image);
 			return 1;
 		}
 	}
@@ -261,8 +244,8 @@ int test_decompress() {
 	#endif
 
 	//Clean up.
-	free(compressed_image);
-	free(decompressed_image);
+	free(com_image);
+	free(decom_image);
 
 	return 0;
 }

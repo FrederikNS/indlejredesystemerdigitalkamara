@@ -172,7 +172,7 @@ int fold_laplacian(IMAGE *image, IMAGE *image2) {
 	int new_value = 0; //The value after stretching,
 					   //but possibly with values outside 0-255.
 	int i, a; //i is column number (from bottom to top), a is row number.
-	
+
 	//Taking care of the special case in which the image is 1 pixel high xor wide.
 	if ((image->Height == 1 || image->Width == 1) && !(image->Width == 1 && image->Height == 1)) {
 
@@ -249,15 +249,15 @@ int fold_laplacian(IMAGE *image, IMAGE *image2) {
 
 	//Top side.
 	for (i = 1; i < image->Width-1; i++) {
-		new_value = (3*image->Pixels[i+image->Width*image->Height-1]-//"3*" due to reflection.
-			(image->Pixels[i+image->Width*image->Height-1-1]
-			+image->Pixels[i+image->Width*image->Height-1+1]
-			+image->Pixels[i+image->Width*(image->Height-1-1)]))
+		new_value = (3*image->Pixels[i+image->Width*(image->Height-1)]-//"3*" due to reflection.
+			(image->Pixels[i+image->Width*(image->Height-1)-1]
+			+image->Pixels[i+image->Width*(image->Height-1)+1]
+			+image->Pixels[i+image->Width*((image->Height-1)-1)]))
 			*5/4 + 123;
 
-		if (new_value < 0) {(image2->Pixels)[i+image->Width*image->Height-1] = 0;}
-		else if (new_value > 255) {(image2->Pixels)[i+image->Width*image->Height-1] = 255;}
-		else {(image2->Pixels)[i+image->Width*image->Height-1] = new_value;}
+		if (new_value < 0) {(image2->Pixels)[i+image->Width*(image->Height-1)] = 0;}
+		else if (new_value > 255) {(image2->Pixels)[i+image->Width*(image->Height-1)] = 255;}
+		else {(image2->Pixels)[i+image->Width*(image->Height-1)] = new_value;}
 	}
 
 	//Left side.
@@ -427,18 +427,18 @@ int fold_steepness(IMAGE *image, IMAGE *image2) {
 	for (i = 1; i < image->Width-1; i++) {
 		sum_horizontal = (
 			image->Pixels[i -1 + image->Width*(image->Height-1-1)]
-			+2*image->Pixels[i -1 + image->Width*image->Height-1]//"2*" due to reflection.
+			+2*image->Pixels[i -1 + image->Width*(image->Height-1)]//"2*" due to reflection.
 			-(image->Pixels[i +1 + image->Width*(image->Height-1-1)]
-			+2*image->Pixels[i +1 + image->Width*image->Height-1]));//"2*" due to reflection.
+			+2*image->Pixels[i +1 + image->Width*(image->Height-1)]));//"2*" due to reflection.
 		sum_vertical = (
-			image->Pixels[i + image->Width*image->Height-1-1]
-			+image->Pixels[i + image->Width*image->Height-1]
-			+image->Pixels[i + image->Width*image->Height-1+1]
+			image->Pixels[i + image->Width*(image->Height-1)-1]
+			+image->Pixels[i + image->Width*(image->Height-1)]
+			+image->Pixels[i + image->Width*(image->Height-1)+1]
 			-(image->Pixels[i+ image->Width*(image->Height-1-1)-1]
 			+image->Pixels[i+image->Width*(image->Height-1-1)]
 			+image->Pixels[i+image->Width*(image->Height-1-1)+1]));
 
-		image2->Pixels[i+image->Width*image->Height-1] = (
+		image2->Pixels[i+image->Width*(image->Height-1)] = (
 				sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 				/STEEPNESS_MAX_VALUE;
 	}
@@ -513,30 +513,30 @@ int fold_steepness(IMAGE *image, IMAGE *image2) {
 
 	//Top-left corner.
 	sum_horizontal = (
-		2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
+		2*image->Pixels[image->Width*(image->Height-1)]//"2*" due to reflection.
 		+image->Pixels[image->Width*(image->Height-1-1)]
-		-(2*image->Pixels[image->Width*image->Height-1+1]//"2*" due to reflection.
+		-(2*image->Pixels[image->Width*(image->Height-1)+1]//"2*" due to reflection.
 		+image->Pixels[image->Width*(image->Height-1-1)+1]));
 	sum_vertical = (
-		2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
-		+image->Pixels[image->Width*image->Height-1+1]
+		2*image->Pixels[image->Width*(image->Height-1)]//"2*" due to reflection.
+		+image->Pixels[image->Width*(image->Height-1)+1]
 		-(2*image->Pixels[image->Width*(image->Height-1-1)]//"2*" due to reflection.
 		+image->Pixels[image->Width*(image->Height-1-1)+1]));
-	image2->Pixels[image->Width*image->Height-1] = (
+	image2->Pixels[image->Width*(image->Height-1)] = (
 			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 			/STEEPNESS_MAX_VALUE;
 
 	//Top-right corner.
 	sum_horizontal = (
 		2*image->Pixels[image->Width*image->Height-2]//"2*" due to reflection.
-		+image->Pixels[image->Width*image->Height-1-2]
+		+image->Pixels[image->Width*(image->Height-1)-2]
 		-(2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
-		+image->Pixels[image->Width*image->Height-1-1]));
+		+image->Pixels[image->Width*(image->Height-1)-1]));
 	sum_vertical = (
 		2*image->Pixels[image->Width*image->Height-1]//"2*" due to reflection.
 		+image->Pixels[image->Width*image->Height-2]
-		-(2*image->Pixels[image->Width*image->Height-1-1]//"2*" due to reflection.
-		+image->Pixels[image->Width*image->Height-1-2]));
+		-(2*image->Pixels[image->Width*(image->Height-1)-1]//"2*" due to reflection.
+		+image->Pixels[image->Width*(image->Height-1)-2]));
 	image2->Pixels[image->Width*image->Height-1] = (
 			sum_horizontal*sum_horizontal+sum_vertical*sum_vertical)
 			/STEEPNESS_MAX_VALUE;

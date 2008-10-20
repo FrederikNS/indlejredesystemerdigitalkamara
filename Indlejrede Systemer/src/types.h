@@ -16,7 +16,7 @@ typedef unsigned int   WORD;
 typedef struct {
 	WORD  Height;
 	WORD  Width;
-	BYTE  Pixels[MAX_WIDTH * MAX_HEIGHT];	
+	BYTE  Pixels[MAX_WIDTH * MAX_HEIGHT * 2 + MAX_HEIGHT];
 } IMAGE;
 
 #endif /* __TYPES_H */

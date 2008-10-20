@@ -26,4 +26,6 @@ char ccd_get_pixel();
 /* get four pixels of the captured image */
 int ccd_get_pixels();
 
+void ccd_free();
+
 #endif /* __CCD_H */
