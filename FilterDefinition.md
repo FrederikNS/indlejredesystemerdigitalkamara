@@ -1,0 +1,16 @@
+# Introduction #
+
+Definition of filters
+
+
+# Details #
+
+3 filters:
+
+Mean x\*x filter filled with 1's.
+
+Laplacian 3\*3 filter, -1\*4 + 4 version.
+
+Prewitt vector length 3\*3 filter, horizontal and vertical combined.
+
+Each boundary "pixel" is defined as equal to the closest image pixel.

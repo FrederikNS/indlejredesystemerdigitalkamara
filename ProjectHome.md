@@ -1,0 +1,1 @@
+This is a student project for making the software for a simple digital camera
